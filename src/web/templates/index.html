@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="theory-nav-badge">
+    <a href="/theory">Theory</a>
+</div>
+
+<div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center mb-4">
+                    <a href="/" id="logoLink" style="text-decoration: none;">
+                        <h1 class="display-4 logo-text"><span class="integral-symbol">∫</span> IntegralIn<span class="dx-text">dx</span></h1>
+                    </a>
+                    <p class="lead">Find similar mathematical integrals using E-Gen embeddings</p>
+                    <p class="text-muted">
+                        More than 26k integrals from <a href="https://math.stackexchange.com" target="_blank" class="text-muted text-decoration-none">MathStackExchange</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="search-card">
+                    <form id="searchForm">
+                        <div class="mb-3">
+                            <label for="queryInput" class="form-label">
+                                <span class="label-text">Search Expression (SymPy format)</span>
+                            </label>
+                            <input type="text" class="form-control search-input" id="queryInput"
+                                   placeholder="e.g., log(sin(x))" required maxlength="200">
+                            <div class="form-text format-help" id="formatHelp">
+                                <strong>Allowed functions:</strong> sin, cos, tan, sinh, cosh, tanh, asin, acos, atan, asinh, acosh, atanh, exp, log, sqrt, polylog
+                                <br><strong>Examples:</strong> <code>log(sin(x))</code>,  <code>1/(1+x**2)</code>,  <code>log(2*x + 1)</code>,  <code>polylog(2, x)</code>,  <code>exp(-x)</code>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary search-button w-100">
+                            <span id="searchSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+                            Find Similar Integrals
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="about-card">
+                    <div class="about-header" onclick="toggleAbout()">
+                        <span class="about-title">About This Demo</span>
+                        <span id="aboutToggle" class="about-toggle">▼</span>
+                    </div>
+                    <div id="aboutContent" class="about-content">
+                        <p class="about-description">
+                            This is a personal research demonstration based on the recent paper
+                            <a href="https://arxiv.org/abs/2501.14951" target="_blank" class="text-decoration-none"><em>"E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions"</em></a>
+                            by Zheng et al. (2025). The project implements <strong>E-Gen embeddings</strong>, a novel approach
+                            for creating semantic representations of mathematical expressions in a continuous vector space.
+                            The database contains over 26,000 integral expressions sourced from Math StackExchange, serving as
+                            a playground to test how E-Gen embeddings capture mathematical similarity and return related expressions
+                            in the embedding space. The goal is to enable similarity search that goes beyond simple pattern matching
+                            to understand genuine mathematical structure and relationships.
+                        </p>
+                        <div class="about-links mt-3">
+                            <a href="/theory" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-file-text"></i> See Theory & Architecture
+                            </a>
+                            <a href="https://arxiv.org/abs/2501.14951" target="_blank" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-file-text"></i> Read the Paper
+                            </a>
+                            <a href="https://github.com/noamshh/IntegralIndx" target="_blank" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-github"></i> GitHub Repository
+                            </a>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <strong>Note:</strong> This is a research demonstration. Results may contain parsing errors or inaccuracies from the source data. Always verify mathematical expressions independently.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-10">
+                <div id="resultsSection" class="d-none">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4>Search Results</h4>
+                            <span id="resultsCount" class="badge bg-secondary"></span>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultsContainer" class="row"></div>
+                            <div id="moreResultsContainer" class="text-center mt-3 d-none">
+                                <button id="moreResultsBtn" class="btn btn-outline-primary">
+                                    Show More Results
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="row justify-content-center mt-3">
+            <div class="col-md-8">
+                <div id="errorAlert" class="alert alert-danger d-none">
+                    <strong>Error:</strong> <span id="errorMessage"></span>
+                </div>
+            </div>
+        </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/app.js"></script>
+<script>
+function toggleAbout() {
+    const content = document.getElementById('aboutContent');
+    const toggle = document.getElementById('aboutToggle');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▲';
+    } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼';
+    }
+}
+// Start collapsed
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('aboutContent').style.display = 'none';
+});
+</script>
+{% endblock %}

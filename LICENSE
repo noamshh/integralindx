@@ -1,0 +1,46 @@
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+
+This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+To view a copy of this license, visit:
+http://creativecommons.org/licenses/by-nc-sa/4.0/
+
+or send a letter to:
+Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+===============================================================================
+
+ATTRIBUTION REQUIREMENTS:
+
+This project builds upon:
+
+1. E-Gen Research
+   - Authors: Hongbo Zheng, Suyuan Wang, Neeraj Gangwar, Nickvash Kani
+   - Paper: "E-Gen: Leveraging E-Graphs to Improve Continuous Representations
+     of Symbolic Expressions" (NAACL 2025)
+   - arXiv: https://arxiv.org/abs/2501.14951
+   - Code: https://github.com/hongbozheng/E-Gen
+   - License: CC BY-NC-SA 4.0
+   - Patent: US20240135148A1 - "Semantic Representations of Mathematical
+     Expressions in a Continuous Vector Space" (University of Illinois System)
+
+2. Math StackExchange Data
+   - Source: Math StackExchange (https://math.stackexchange.com)
+   - License: CC BY-SA 4.0 (user-contributed content)
+   - All integral expressions in this dataset are sourced from MSE
+
+===============================================================================
+
+NOTICE:
+
+This is a personal research project for educational and non-commercial purposes only.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+Users are advised to independently verify all mathematical expressions and
+results. The dataset may contain parsing errors or inaccuracies from the
+source data.
+
+===============================================================================

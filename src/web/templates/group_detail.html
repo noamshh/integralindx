@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Integrand Group - IntegralIndx{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-4">
+                    <a href="/" class="btn btn-outline-secondary mb-3">← Back to Search</a>
+                    <a href="/" style="text-decoration: none; color: inherit;">
+                        <h1 class="display-5">∫ Integrand</h1>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group Summary -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Left Column: Display Form -->
+                            <div class="col-md-7 mb-3">
+                                {% if group.representative_integrand %}
+                                <h6 class="mb-2">Display Form</h6>
+                                <div class="integral-display-compact">
+                                    $${{ group.representative_integrand }}$$
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Right Column: Functions & Canonical Form -->
+                            <div class="col-md-5 mb-3">
+                                <h6 class="mb-2">Functions:</h6>
+                                <div class="mb-3">
+                                    <span class="badge bg-secondary">{{ group.integrand_family }}</span>
+                                </div>
+
+                                <h6 class="mb-2">Canonical Form (SymPy)</h6>
+                                <div class="canonical-form-display">
+                                    <code>{{ group.integrand_canonical }}</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if closed_forms and closed_forms|length > 0 %}
+                        <div class="mt-2">
+                            <h6>Possible Closed Forms ({{ closed_forms|length }})</h6>
+                            <p class="text-muted small mb-2">
+                                <em>Note: These solutions are extracted from Math StackExchange data and may contain errors. Verify before using.</em>
+                            </p>
+                            <div class="alert alert-success closed-forms-container">
+                                {% for item in closed_forms %}
+                                <div class="closed-form-item">
+                                    $${{ item.source_integral }} = {{ item.closed_form }}$$
+                                    {% if item.author_name and item.author_link %}
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            Source: <a href="https://math.stackexchange.com/q/{{ item.mse_question_id }}" target="_blank" class="text-decoration-none">MSE</a> by <a href="{{ item.author_link }}" target="_blank" class="text-decoration-none">{{ item.author_name }}</a>
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MSE Links -->
+        {% if mse_links %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Math StackExchange Questions ({{ mse_links|length }})</h6>
+                    </div>
+                    <div class="card-body py-2">
+                        {% for link in mse_links %}
+                        <a href="{{ link.url }}" target="_blank" class="badge text-decoration-none me-1 mb-1 mse-link-badge">
+                            Q{{ link.question_id }} <i class="bi bi-box-arrow-up-right" style="font-size: 0.7rem;"></i>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Integral Instances -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">All Integral Instances ({{ instances|length }})</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="instancesAccordion">
+                            {% for instance in instances %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#collapse{{ loop.index }}" aria-expanded="false"
+                                            aria-controls="collapse{{ loop.index }}">
+                                        <span class="badge bg-{{ 'success' if instance.integral_type == 'definite' else 'info' }} me-2">
+                                            {{ instance.integral_type }}
+                                        </span>
+                                        {% if instance.removed %}
+                                        <span class="badge bg-warning text-dark me-2">CURATED</span>
+                                        {% endif %}
+                                        <span class="me-3">${{ instance.normalized_latex }}$</span>
+                                        {% if instance.mse_question_id %}
+                                        <small class="text-muted">MSE: {{ instance.mse_question_id }}</small>
+                                        {% endif %}
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
+                                     aria-labelledby="heading{{ loop.index }}" data-bs-parent="#instancesAccordion">
+                                    <div class="accordion-body">
+                                        {% if instance.removed %}
+                                        <div class="alert alert-warning" role="alert">
+                                            <strong>⚠️ CURATED (Hidden from users)</strong><br>
+                                            <small>Removal reason: {{ instance.removal_reason }}</small>
+                                        </div>
+                                        {% endif %}
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>LaTeX Expressions</h6>
+                                                <p><strong>Raw:</strong> <code>{{ instance.raw_latex }}</code></p>
+                                                <p><strong>Normalized:</strong> <code>{{ instance.normalized_latex }}</code></p>
+
+                                                <h6 class="mt-3">Rendered</h6>
+                                                <div class="alert alert-light">
+                                                    $${{ instance.normalized_latex }}$$
+                                                </div>
+
+                                                {% if instance.equivalent_forms and instance.equivalent_forms|length > 0 %}
+                                                <h6 class="mt-3">Equivalent Forms ({{ instance.equivalent_forms|length }})</h6>
+                                                <div class="alert alert-secondary">
+                                                    {% for equiv in instance.equivalent_forms %}
+                                                    <div class="mb-2">$${{ equiv }}$$</div>
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>SymPy Parsing</h6>
+                                                <ul>
+                                                    <li><strong>Integrand:</strong> <code>{{ instance.sympy_integrand }}</code></li>
+                                                    <li><strong>Variable:</strong> <code>{{ instance.sympy_variable }}</code></li>
+                                                    {% if instance.sympy_lower_bound %}
+                                                    <li><strong>Lower bound:</strong> <code>{{ instance.sympy_lower_bound }}</code></li>
+                                                    {% endif %}
+                                                    {% if instance.sympy_upper_bound %}
+                                                    <li><strong>Upper bound:</strong> <code>{{ instance.sympy_upper_bound }}</code></li>
+                                                    {% endif %}
+                                                </ul>
+
+                                                {% if instance.mse_question_id %}
+                                                <h6 class="mt-3">Source</h6>
+                                                <a href="https://math.stackexchange.com/questions/{{ instance.mse_question_id }}"
+                                                   target="_blank" class="btn btn-sm btn-primary">
+                                                    View on MSE
+                                                </a>
+                                                {% if instance.author_name and instance.author_link %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        by <a href="{{ instance.author_link }}" target="_blank" class="text-decoration-none">{{ instance.author_name }}</a>
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                                {% endif %}
+
+                                                {% if dev_mode %}
+                                                <h6 class="mt-3 text-danger">Developer Actions</h6>
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                        onclick="removeInstance('{{ instance.id }}', '{{ group.integrand_hash }}')">
+                                                     Remove Instance
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if dev_mode %}
+<script>
+    function removeInstance(instanceId, integrandHash) {
+        const reason = prompt('Reason for removal (required):');
+        if (!reason || reason.trim() === '') {
+            alert('Removal cancelled: reason is required');
+            return;
+        }
+        if (!confirm(`Are you sure you want to remove instance ${instanceId}?\n\nReason: ${reason}`)) {
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/integrand/${integrandHash}/remove-instance`;
+        const instanceInput = document.createElement('input');
+        instanceInput.type = 'hidden';
+        instanceInput.name = 'instance_id';
+        instanceInput.value = instanceId;
+        form.appendChild(instanceInput);
+        const reasonInput = document.createElement('input');
+        reasonInput.type = 'hidden';
+        reasonInput.name = 'reason';
+        reasonInput.value = reason;
+        form.appendChild(reasonInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endif %}
+{% endblock %}
