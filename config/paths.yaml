@@ -1,0 +1,98 @@
+# Path Configuration for IntegralIndx
+# Modern approach: YAML config + pathlib for flexibility
+
+# Project
+project_root: "."
+
+# Config
+config:
+  root: "config"
+  api_keys: "config/api_keys.yaml"
+
+# Data
+data:
+  root: "data"
+  raw:
+    root: "data/raw"
+    blobs: "data/raw/blobs"
+    formulas: "data/raw/formulas"
+  normalized:
+    root: "data/normalized"
+  filtered:
+    root: "data/filtered"
+  cleaned:
+    root: "data/cleaned"
+  grouped:
+    root: "data/grouped"
+  curated:
+    root: "data/curated"
+  post_filtered:
+    root: "data/post_filtered"
+  training: "data/training"
+  embeddings: "data/embeddings"
+  search_index: "data/search_index"
+  evaluation: "data/evaluation"
+
+# E-graph
+egraph:
+  equivalences: "data/egraph/equivalence_classes.jsonl"
+  training_pairs: "data/egraph/training_pairs.jsonl"
+  augmented_data: "data/egraph/augmented_training_data.jsonl"
+
+# Specific data files
+files:
+  # Raw data
+  mse_raw: "data/raw/formulas/mse.jsonl"
+
+  # Normalized data (full dataset)
+  normalized_accepted: "data/normalized/normalized_accepted.jsonl"
+  normalized_rejected: "data/normalized/normalized_rejected.jsonl"
+  normalization_stats: "data/normalized/normalization_stats.json"
+
+  # Contributors workflow
+  contributing_source_ids: "data/contributing_source_ids.txt"
+  raw_contributors: "data/raw_contributors.jsonl"
+  normalized_contributors: "data/normalized_contributors.jsonl"
+
+  # Filtered integrals (legacy)
+  integrals_all: "data/filtered/integrals_all.jsonl"
+  integrals_definite: "data/filtered/integrals_definite.jsonl"
+  integrals_indefinite: "data/filtered/integrals_indefinite.jsonl"
+  filter_stats: "data/filtered/filter_stats.json"
+
+  # Cleaned integrals (with integrand fields)
+  integrals_all_cleaned: "data/cleaned/integrals_all.jsonl"
+  integrals_definite_cleaned: "data/cleaned/integrals_definite.jsonl"
+  integrals_indefinite_cleaned: "data/cleaned/integrals_indefinite.jsonl"
+  filter_stats_cleaned: "data/cleaned/filter_stats.json"
+
+  # Variable normalized integrals
+  integrals_all_normalized: "data/normalized_vars/integrals_all.jsonl"
+  integrals_definite_normalized: "data/normalized_vars/integrals_definite.jsonl"
+  integrals_indefinite_normalized: "data/normalized_vars/integrals_indefinite.jsonl"
+  normalization_stats_vars: "data/normalized_vars/normalization_stats.json"
+
+  # Grouped integrals
+  integrals_all_grouped: "data/grouped/integrals_all.jsonl"
+  integrals_definite_grouped: "data/grouped/integrals_definite.jsonl"
+  integrals_indefinite_grouped: "data/grouped/integrals_indefinite.jsonl"
+  integrand_groups: "data/grouped/integrand_groups.jsonl"
+  integrand_group_stats: "data/grouped/integrand_group_stats.json"
+
+  # Curated integrals (manually cleaned)
+  integrals_all_curated: "data/curated/integrals_all.jsonl"
+  integrals_definite_curated: "data/curated/integrals_definite.jsonl"
+  integrals_indefinite_curated: "data/curated/integrals_indefinite.jsonl"
+  integrand_groups_curated: "data/curated/integrand_groups.jsonl"
+  curated_removals_log: "data/curated/removals.jsonl"
+
+  # Legacy post-filtered
+  integrals_all_post_filtered: "data/post_filtered/integrals_all_cleaned.jsonl"
+  integrals_definite_post_filtered: "data/post_filtered/integrals_definite_cleaned.jsonl"
+  integrals_indefinite_post_filtered: "data/post_filtered/integrals_indefinite_cleaned.jsonl"
+  post_filter_stats: "data/post_filtered/post_filter_stats.json"
+
+  # Training data
+  training_pairs: "data/training/contrastive_pairs.jsonl"
+  
+
