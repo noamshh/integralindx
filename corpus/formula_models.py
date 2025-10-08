@@ -66,13 +66,11 @@ class NormalizedFormula(BaseFormula):
 
     @classmethod
     def make_id(cls, source_id: str, raw_latex: str) -> str:
-        """Create unique ID based on source and raw LaTeX"""
         key = (source_id or "unknown") + ":" + (raw_latex or "")
         return "normalized-" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
     @classmethod
     def rejected(cls, source_id: str, raw_latex: str, reason: str) -> "NormalizedFormula":
-        """Create rejected NormalizedFormula"""
         return cls(
             id=cls.make_id(source_id, raw_latex),
             source_id=source_id,
@@ -84,7 +82,6 @@ class NormalizedFormula(BaseFormula):
     @classmethod
     def accepted(cls, source_id: str, raw_latex: str, leading_expression: str, 
                  equivalent_forms: List[str] = None, conditions: str = None) -> "NormalizedFormula":
-        """Create accepted NormalizedFormula"""
         return cls(
             id=cls.make_id(source_id, raw_latex),
             source_id=source_id,
@@ -204,16 +201,13 @@ class IntegrandGroup(BaseFormula):
             'created_at': self.created_at
         }
 
-
 def append_jsonl(path: str, item) -> None:
-    """Append a single item (with .to_json() method) to JSONL file"""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(item.to_json() + "\n")
 
 
 def write_jsonl(path: str, items: List) -> None:
-    """Write a list of items (with .to_json() method) to JSONL file"""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         for item in items:

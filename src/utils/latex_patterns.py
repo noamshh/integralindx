@@ -1,4 +1,6 @@
 import re
+
+
 REL_TOKENS = [
     r'\\stackrel\{[^}]*\}\{=\}',
     r'\\stackrel\?=',
@@ -65,96 +67,36 @@ PIECEWISE_INDICATORS = [
             r'\\\\.*\\text\s*\{.*(?:if|for|when|otherwise)',
 ]
 
-# 1D Integral detection patterns with capture groups for bounds
-INTEGRAL_1D_PATTERNS = [
-    # Definite integrals with bounds - lower first, then upper
-    r'\\int_\{([^}]+)\}\^\{([^}]+)\}',   # \int_{a}^{b} -> groups: (a, b)
-    r'\\int_([^{^}]+)\^([^{^}]+)',        # \int_a^b -> groups: (a, b)
-    r'\\int_\{([^}]+)\}\^([^{^}]+)',      # \int_{a}^b -> groups: (a, b)
-    r'\\int_([^{^}]+)\^\{([^}]+)\}',      # \int_a^{b} -> groups: (a, b)
-    
-    # Definite integrals with bounds - upper first, then lower (note: swapped in groups)
-    r'\\int\^\{([^}]+)\}_\{([^}]+)\}',   # \int^{b}_{a} -> groups: (b, a) - need to swap
-    r'\\int\^([^{_}]+)_([^{_}]+)',        # \int^b_a -> groups: (b, a) - need to swap
-    r'\\int\^\{([^}]+)\}_([^{_}]+)',      # \int^{b}_a -> groups: (b, a) - need to swap
-    r'\\int\^([^{_}]+)_\{([^}]+)\}',      # \int^b_{a} -> groups: (b, a) - need to swap
-    
-    # Definite integrals with spaces before bounds
-    r'\\int\s+_\{([^}]+)\}\^\{([^}]+)\}', # \int _{a}^{b} -> groups: (a, b)
-    r'\\int\s+_([^{^}]+)\^([^{^}]+)',     # \int _a^b -> groups: (a, b)
-    r'\\int\s+\^\{([^}]+)\}_\{([^}]+)\}', # \int ^{b}_{a} -> groups: (b, a) - need to swap
-    r'\\int\s+\^([^{_}]+)_([^{_}]+)',     # \int ^b_a -> groups: (b, a) - need to swap
-    
-    # Indefinite integrals (no bounds) - only after checking all definite patterns
-    r'\\int(?!\s*[_{^}])',            # \int not followed by bounds (with optional space)
-]
-
-# Integral canonicalization patterns - convert to standard \int_{lower}^{upper} format
 INTEGRAL_CANONICALIZATION_PATTERNS = [
-    # Mixed formats: \int_a^{b}, \int_{a}^b -> \int_{a}^{b} 
-    # Fixed: Use more restrictive patterns to avoid capturing fractions
-    (r'\\int_([^{^}\s\\]+)\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),      # \int_a^{b} - exclude backslash
-    (r'\\int_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),      # \int_{a}^b - exclude backslash
-    (r'\\int_([^{^}\s\\]+)\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),                       # \int_a^b simple - exclude backslash
-    
-    # Reverse order: \int^{b}_{a} -> \int_{a}^{b}
-    (r'\\int\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # nested braces
-    (r'\\int\^([^{_}\s\\]+)_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # \int^b_{a} - exclude backslash
-    (r'\\int\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),  # \int^{b}_a - exclude backslash  
-    (r'\\int\^([^{_}\s\\]+)_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),                   # \int^b_a simple - exclude backslash
-    
-    # Spaced formats: \int _a^b -> \int_{a}^{b}
-    (r'\\int\s+_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),  # nested braces
-    (r'\\int\s+_([^{^}\s\\]+)\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),                # \int _a^b simple - exclude backslash
-    (r'\\int\s+_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),  # \int _{a}^b - exclude backslash
-    (r'\\int\s+_([^{^}\s\\]+)\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),  # \int _a^{b} - exclude backslash
-    
-    # Spaced reverse order: \int ^{b}_{a} -> \int_{a}^{b}
-    (r'\\int\s+\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # nested braces
-    (r'\\int\s+\^([^{_}\s\\]+)_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),                # \int ^b_a simple - exclude backslash
-    (r'\\int\s+\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),  # \int ^{b}_a - exclude backslash
-    (r'\\int\s+\^([^{_}\s\\]+)_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # \int ^b_{a} - exclude backslash
-    
-    # Single bounds (subscript only) - ensure braces  
-    (r'\\int_([^{^}\s\\]+)(?!\^)', r'\\int_{\1}'),                                 # \int_a -> \int_{a} (no superscript) - exclude backslash
+    (r'\\int_([^{^}\s\\]+)\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),      # \int_a^{b}
+    (r'\\int_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),      # \int_{a}^b
+    (r'\\int_([^{^}\s\\]+)\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),                       # \int_a^b
+    (r'\\int\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),
+    (r'\\int\^([^{_}\s\\]+)_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # \int^b_{a}
+    (r'\\int\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),  # \int^{b}_a
+    (r'\\int\^([^{_}\s\\]+)_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),                   # \int^b_a
+    (r'\\int\s+_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),
+    (r'\\int\s+_([^{^}\s\\]+)\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),                # \int _a^b
+    (r'\\int\s+_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}\^([^{^}\s\\]+)', r'\\int_{\1}^{\2}'),  # \int _{a}^b
+    (r'\\int\s+_([^{^}\s\\]+)\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\1}^{\2}'),  # \int _a^{b}
+    (r'\\int\s+\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),
+    (r'\\int\s+\^([^{_}\s\\]+)_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),                # \int ^b_a
+    (r'\\int\s+\^\{([^}]*(?:\{[^}]*\}[^}]*)*)\}_([^{_}\s\\]+)', r'\\int_{\2}^{\1}'),  # \int ^{b}_a
+    (r'\\int\s+\^([^{_}\s\\]+)_\{([^}]*(?:\{[^}]*\}[^}]*)*)\}', r'\\int_{\2}^{\1}'),  # \int ^b_{a}
+    (r'\\int_([^{^}\s\\]+)(?!\^)', r'\\int_{\1}'),                                 # \int_a -> \int_{a}
 ]
 
-# Differential patterns - normalize formatted differentials to simple d+variable
 DIFFERENTIAL_PATTERNS = [
     r'\\(?:textrm|mathrm|text)\s*\{\s*d\s*\}\s*([a-zA-Z]+)',       # \textrm{d}x, \mathrm{d}x, \text{d}x → dx
     r'\\(?:textrm|mathrm|text)\s*\{\s*d([a-zA-Z]+)\s*\}',          # \textrm{dx}, \mathrm{dx}, \text{dx} → dx
     r'\\,d([a-zA-Z]+)',                                             # \,dx (with thin space) → dx
 ]
-
-# Special integral bounds patterns
-MATHBB_R_PATTERNS = [
-    r'\\mathbb\{R\}',      # \mathbb{R}
-    r'\\mathbb R',         # \mathbb R (without braces)
-    r'mathbb\{R\}',        # mathbb{R} (missing backslash)
-    r'mathbb R',           # mathbb R (missing backslash, no braces)
-]
-
-# Combined pattern for detecting \mathbb{R} in integral bounds
-MATHBB_R_BOUND_PATTERN = r'\\int_\{?(?:' + '|'.join(MATHBB_R_PATTERNS) + r')\}?'
-
-# More refined patterns for checking bound content
-MATHBB_R_BOUND_CONTENT_PATTERNS = [
-    r'\\mathbb\{R\}',      # \mathbb{R}
-    r'\\mathbb R',         # \mathbb R (without braces)  
-    r'mathbb\{R\}',        # mathbb{R} (missing backslash)
-    r'mathbb R',           # mathbb R (missing backslash, no braces)
-]
-
-
-# Multi-dimensional integrals to exclude
 INTEGRAL_MULTIDIM_EXCLUDE = [
-    r'\\iint',      # Double integrals
-    r'\\iiint',     # Triple integrals  
-    r'\\oiint',     # Surface integrals
-    r'\\oiiint',    # Volume integrals
+    r'\\iint',
+    r'\\iiint',
+    r'\\oiint',
+    r'\\oiiint',
 ]
-
-# Variable assignment patterns (I = \int, J = \int, etc.) - only I and J
 INTEGRAL_VARIABLE_PATTERNS = [
     r'[IJ]\s*=\s*\\int',                     # I = \int, J = \int
     r'[IJ]_\{[^}]+\}\s*=\s*\\int',          # I_{n} = \int, J_{n} = \int

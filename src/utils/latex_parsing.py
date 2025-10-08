@@ -1,11 +1,10 @@
 import re
 from typing import Tuple, List, Optional
 from src.utils.latex_patterns import (
-    SIZE_COMMANDS, CONNECTIVE_COMPILED, REPETITIVE_SYMBOL_COMPILED,
+    SIZE_COMMANDS, CONNECTIVE_COMPILED,
     PIECEWISE_INDICATORS, MATRIX_PATTERNS, CONDITION_MARKERS, IMPLICATION_PATTERNS,
     ARG_TAKING_COMMANDS
 )
-
 
 def _match_brace(s: str, start_idx: int) -> int:
     """Return index of matching '}' given that s[start_idx] == '{'. -1 if not found."""
@@ -191,14 +190,14 @@ def _consume_denominator_token(s: str, idx: int) -> Tuple[int, str]:
                     return j + 1, s[i:j + 1]
             j += 1
         return n, s[i:]  # malformed
-    # 3) LaTeX command starting with backslash: consume robustly
+    # 3) latex command starting with backslash
     if s[i] == '\\':
         new_idx, token = _consume_command_with_arg(s, i)
         return new_idx, token or s[i:new_idx]
-    # 4) Single-digit short form (common in \frac3 4 idiom)
+    # 4) single-digit short form (common in \frac3 4 idiom)
     if s[i].isdigit():
         return i + 1, s[i]
-    # 5) Identifier / number / short expression: read until delimiter
+    # 5) identifier / number / short expression: read until delimiter
     delimiters = {',', ';', ':', '+', '-', '*', '/', '^', ')', ']', '}', '%', ' ', '.', '\\', '{', '}'}
     j = i
     while j < n and not s[j].isspace() and s[j] not in delimiters:
@@ -230,7 +229,7 @@ def _fix_unbraced_fractions_once(s: str) -> Tuple[str, bool]:
     changed = False
     while i < n:
         if s.startswith(r'\frac{', i) or s.startswith(r'\tfrac{', i) or s.startswith(r'\dfrac{', i):
-            # Get the command length
+            # get the command length
             if s.startswith(r'\tfrac{', i):
                 cmd_len = len(r'\tfrac')
             elif s.startswith(r'\dfrac{', i):
@@ -284,7 +283,6 @@ def _fix_unbraced_fractions_once(s: str) -> Tuple[str, bool]:
 
 
 def _fix_unbraced_fractions(s: str, max_iters: int = 5) -> str:
-    """Iteratively apply one-pass fixer until string is stable or max_iters reached."""
     current = s
     for _ in range(max_iters):
         new_s, changed = _fix_unbraced_fractions_once(current)
@@ -294,7 +292,6 @@ def _fix_unbraced_fractions(s: str, max_iters: int = 5) -> str:
     return current
 
 def _split_on_connectives(s: str) -> List[str]:
-    """Split formulas joined by connective words like 'and', 'or', etc."""
     for pattern in CONNECTIVE_COMPILED:
         if pattern.search(s):
             parts = pattern.split(s)
@@ -302,7 +299,6 @@ def _split_on_connectives(s: str) -> List[str]:
     return [s]
 
 def _fix_unbraced_scripts(s: str) -> str:
-    """Fix unbraced subscripts/superscripts"""
     if not s:
         return s
     s = re.sub(r'([\^_])\\(frac|tfrac|dfrac)\{([^}]*)\}\{([^}]*)\}', r'\1{\\\2{\3}{\4}}', s)
@@ -314,7 +310,6 @@ def _fix_unbraced_scripts(s: str) -> str:
     return s
 
 def _is_safe_boundary(s: str, pos: int) -> bool:
-    """Check if position is a safe boundary for tokenization."""
     if pos >= len(s):
         return True
     ch = s[pos]
@@ -395,7 +390,7 @@ def _split_respecting_environments(s: str) -> List[str]:
     i = 0
     n = len(s)
     while i < n:
-        # Check for \begin{env}
+        # check for \begin{env}
         if s.startswith(r'\begin{', i):
             env_match = re.match(r'\\begin\{([^\}]+)\}', s[i:])
             if env_match:
@@ -403,26 +398,26 @@ def _split_respecting_environments(s: str) -> List[str]:
                 end_pattern = r'\end{' + env_name + '}'
                 end_pos = s.find(end_pattern, i + env_match.end())
                 if end_pos != -1:
-                    # Add entire environment to current part (don't split inside it)
+                    # add entire environment to current part (don't split inside it)
                     current += s[i:end_pos + len(end_pattern)]
                     i = end_pos + len(end_pattern)
                     continue
-        # Check for line break patterns
+        # check for line break patterns
         if s[i:i + 2] == '\\\\' or s[i] == '\n' or s.startswith(r'\cr', i):
             # print(f"DEBUG: Found line break at position {i}")
             if s[i:i + 2] == '\\\\':
                 next_start = i + 2
-                # Skip whitespace
+                # skip whitespace
                 while next_start < n and s[next_start].isspace():
                     next_start += 1
                 if next_start < n:
                     next_part = s[next_start:next_start + 10]
-                    # If next line starts with operator/sign, it's continuation
+                    # if next line starts with operator/sign, it's continuation
                     if next_part and next_part[0] in '-+':
                         current += ' '  # Replace \\ with space for continuation
                         i += 2
                         continue
-                    # If next line looks like separate equation (has = sign early), split
+                    # if next line looks like separate equation (has = sign early), split
                     elif '=' in s[next_start:next_start + 50]:
                         if current.strip():
                             parts.append(current.strip())
@@ -433,10 +428,10 @@ def _split_respecting_environments(s: str) -> List[str]:
                 parts.append(current.strip())
 
             current = ""
-            # Skip the break token
+            # skip the break token
             if s[i:i + 2] == '\\\\':
                 i += 2
-                # Skip optional spacing like [3mm]
+                # skip optional spacing like [3mm]
                 while i < n and s[i].isspace():
                     i += 1
                 if i < n and s[i] == '[':
@@ -459,21 +454,17 @@ def split_main_from_conditions(s: str) -> Tuple[str, Optional[str]]:
     Split a formula into main part and conditions.
     Returns (main_part, conditions) where conditions is None if no conditions found.
     """
-    # 1. Text-based condition markers
     for marker in CONDITION_MARKERS:
         match = re.search(marker, s, re.IGNORECASE)
         if match:
             main_part = s[:match.start()].strip()
             condition_part = s[match.start():].strip()
             return main_part, condition_part
-    # 2. Parametric/labeling conditions with \quad - ADD THIS
-    # Match patterns like "\quad N = 2", "\quad a > 0", "\quad a \in \mathbb{R}^+", etc.
     quad_condition_match = re.search(r'\\quad\s+([A-Za-z]\s*(?:=|>|<|≥|≤|\\in|\\geq|\\leq|\\neq)\s*[^,\\]*)', s)
     if quad_condition_match:
         main_part = s[:quad_condition_match.start()].strip()
         condition_part = s[quad_condition_match.start():].strip()
         return main_part, condition_part
-    # 3. Parenthetical conditions at the end
     paren_condition_patterns = [
         r'\s*\([^)]*(?:[<>≤≥]|\\text\s*\{[^}]*\})[^)]*\)\s*$',
         r'\s*\([^)]*(?:\\forall|\\exists|\\in|\\notin|\\subset|\\supset|\\subseteq|\\supseteq)[^)]*\)\s*$',
@@ -486,7 +477,6 @@ def split_main_from_conditions(s: str) -> Tuple[str, Optional[str]]:
             main_part = s[:match.start()].strip()
             condition_part = s[match.start():].strip()
             return main_part, condition_part
-    # 4. Spacing-based separation - \quad followed by inequality
     quad_matches = list(re.finditer(r'\\q(?:uad|quad)\s*', s))
     for match in quad_matches:
         after_quad = s[match.end():]
@@ -494,20 +484,18 @@ def split_main_from_conditions(s: str) -> Tuple[str, Optional[str]]:
             main_part = s[:match.start()].strip()
             condition_part = s[match.start():].strip()
             return main_part, condition_part
-    # 5. Smart comma splitting - parameters like ", N = 2"
     parts = s.split(',')
     if len(parts) > 1:
         first_part = parts[0].strip()
         if '=' in first_part and len(first_part) > 8:
             remaining = ','.join(parts[1:]).strip()
-            # Check for parameter assignments like "N = 2" or inequalities
+            # check for parameter assignments like "N = 2" or inequalities
             if re.search(r'([A-Z]\s*=\s*\d+|[<>≤≥≠]|\\(?:leq?|geq?|neq?)(?![a-zA-Z]))', remaining):
                 return first_part, remaining
-    # No clear separation found
+    # no clear separation found
     return s, None
 
 def _is_piecewise_function(s: str) -> bool:
-    """Detect piecewise functions more intelligently."""
     if '\\begin{cases}' in s:
         return True
     if '\\matrix{' in s and ('\\left\\{' in s or '\\right.' in s):
@@ -516,7 +504,6 @@ def _is_piecewise_function(s: str) -> bool:
         for indicator in PIECEWISE_INDICATORS:
             if re.search(indicator, s, re.IGNORECASE):
                 return True
-    # 4. Left brace with multiple conditions (add HTML entity support!)
     if '\\left\\{' in s and ('\\\\' in s or '&lt;' in s or '&gt;' in s or '<' in s or '>' in s):
         return True
     return False
@@ -534,14 +521,11 @@ def _canonicalize_over_to_frac(s: str) -> str:
             brace_end = _match_brace(s, i)
             if brace_end != -1:
                 brace_content = s[i + 1:brace_end]
-
-                # FIXED: Use regex to match \over as complete command only
                 over_match = re.search(r'\\over(?![a-zA-Z])', brace_content)
-
                 if over_match:
                     over_pos = over_match.start()
                     numerator = brace_content[:over_pos].strip()
-                    # Skip past the complete \over command
+                    # skip past the complete \over command
                     denominator_start = over_match.end()
                     denominator = brace_content[denominator_start:].strip()
                     result.append(f"\\frac{{{numerator}}}{{{denominator}}}")
@@ -557,7 +541,6 @@ def _canonicalize_over_to_frac(s: str) -> str:
 
 
 def _contains_matrix_definitions(s: str) -> bool:
-    """Check if formula contains matrix or vector definitions."""
     for pattern in MATRIX_PATTERNS:
         if re.search(pattern, s):
             return True
@@ -565,7 +548,6 @@ def _contains_matrix_definitions(s: str) -> bool:
 
 
 def _contains_multiple_statements(s: str) -> bool:
-    """Check if formula contains multiple mathematical statements."""
     for pattern in CONNECTIVE_COMPILED:
         if pattern.search(s):
             return True
@@ -580,7 +562,6 @@ def _contains_multiple_statements(s: str) -> bool:
 
 
 def _contains_inequalities(latex: str) -> bool:
-    """Check if LaTeX contains inequality operators."""
     from src.utils.latex_patterns import INEQUALITY_PATTERNS
     for pattern in INEQUALITY_PATTERNS:
         if pattern.search(latex):
@@ -588,7 +569,6 @@ def _contains_inequalities(latex: str) -> bool:
     return False
 
 def _contains_logical_implications(s: str) -> bool:
-    """Detect formulas with logical implications (not pure equations)."""
     for pattern in IMPLICATION_PATTERNS:
         if re.search(pattern, s):
             return True

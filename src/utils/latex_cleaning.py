@@ -35,17 +35,17 @@ def _strip_color_commands(s: str) -> str:
     while i < n:
         if s.startswith(r'\color', i):
             j = i + len(r'\color')
-            # Skip whitespace
+            # skip whitespace
             while j < n and s[j].isspace():
                 j += 1
-            # If followed by braces, consume the color argument
+            # if followed by braces, consume the color argument
             if j < n and s[j] == '{':
                 brace_end = _match_brace(s, j)
                 if brace_end != -1:
-                    # Skip the entire \color{...} construct
+                    # skip the entire \color{...} construct
                     i = brace_end + 1
                     continue
-            # If no braces, just skip the \color command
+            # if no braces, just skip the \color command
             i = j
         else:
             result.append(s[i])
@@ -54,16 +54,12 @@ def _strip_color_commands(s: str) -> str:
 
 
 def _clean_alignment_markers(s: str) -> str:
-    """Remove LaTeX alignment markers that interfere with relation detection."""
     if not s:
         return s
-    # Remove alignment markers from start/end
     s = re.sub(r'^\s*&\s*', '', s)
     s = re.sub(r'\s*&\s*$', '', s)
-    # Remove &= patterns (alignment markers)
     s = re.sub(r'&\s*=', '=', s)
     s = re.sub(r'&\s*([<>≤≥≠])', r'\1', s)
-    # Replace internal alignment markers with spaces
     s = re.sub(r'\s*&\s*', ' ', s)
     return s
 
@@ -125,14 +121,10 @@ def _strip_math_environments(s: str) -> str:
 
 
 def _normalize_differentials(s: str) -> str:
-    """normalize all differential variations to simple dx, dy, etc."""
     if not s:
         return s
-    
-    # apply comprehensive differential patterns in order
     for pattern in DIFFERENTIAL_PATTERNS:
         s = re.sub(pattern, r'd\1', s)
-    
     return s
 
 
@@ -140,19 +132,18 @@ def _normalize_logarithms(s: str) -> str:
     r"""Normalize all logarithms to \log format with proper bracing."""
     if not s:
         return s
-    # Convert \ln to \log - use negative lookahead instead of word boundary
+    # convert \ln to \log - use negative lookahead instead of word boundary
     s = re.sub(r'\\ln(?![a-zA-Z])', r'\\log', s)
-    # Handle powers: \log^n2 -> \log(2)^n
+    # handle powers: \log^n2 -> \log(2)^n
     s = re.sub(r'\\log\^(\{[^}]+\}|\d+)\s*([0-9]+)', r'\\log(\2)^{\1}', s)  # \log^32 -> \log(2)^{3}
     s = re.sub(r'\\log\^(\{[^}]+\}|\d+)\s*([a-zA-Z])\b', r'\\log(\2)^{\1}', s)  # \log^2x -> \log(x)^{2}
-    # Handle unbraced arguments: \log2 -> \log(2), \log x -> \log(x)
+    # handle unbraced arguments: \log2 -> \log(2), \log x -> \log(x)
     s = re.sub(r'\\log\s*([0-9]+)', r'\\log(\1)', s)  # \log2 -> \log(2)
     s = re.sub(r'\\log\s*([a-zA-Z])\b', r'\\log(\1)', s)  # \log x -> \log(x)
     return s
 
 
 def _normalize_special_functions(s: str) -> str:
-    """Normalize special function notations."""
     if not s:
         return s
     s = _normalize_logarithms(s)
@@ -164,34 +155,29 @@ def _normalize_special_functions(s: str) -> str:
     s = _normalize_function_powers(s)
     s = _standardize_function_representations(s)
     s = _normalize_function_evaluations(s)
-
     return s
 
 def _normalize_function_arguments(s: str, function_names: List[str]) -> str:
     """Normalize function arguments by adding parentheses to unbraced arguments."""
     if not s:
         return s
-
     for func in function_names:
         # Use negative lookahead to prevent partial matches (e.g., \sin in \sinh)
         s = re.sub(rf'\\{func}(?![a-zA-Z])\s*([0-9]+[a-zA-Z])', rf'\\{func}(\1)', s)
         s = re.sub(rf'\\{func}(?![a-zA-Z])\s*([a-zA-Z])\b', rf'\\{func}(\1)', s)
     return s
 
-
 def _normalize_inverse_notation(s: str) -> str:
     r"""Convert \sin^{-1} to \arcsin, etc."""
     if not s:
         return s
-
     inverse_map = {
         'sin': 'arcsin', 'cos': 'arccos', 'tan': 'arctan',
         'sec': 'arcsec', 'csc': 'arccsc', 'cot': 'arccot',
         'sinh': 'arcsinh', 'cosh': 'arccosh', 'tanh': 'arctanh'
     }
-
     for func, arc_func in inverse_map.items():
-        # Handle various spacing and brace patterns
+        # handle various spacing and brace patterns
         # \sin^{-1} -> \arcsin (with optional whitespace)
         s = re.sub(rf'\\{func}(?![a-zA-Z])\s*\^\s*\{{\s*-1\s*\}}', rf'\\{arc_func}', s)
         # \sin^-1 -> \arcsin (with optional whitespace)
@@ -204,15 +190,11 @@ def _normalize_inverse_notation(s: str) -> str:
 
 def _normalize_function_powers(s: str) -> str:
     r"""Convert \sin^2 x to \sin(x)^2, etc.
-
-    FIXED: Avoid transforming nested functions like \ln^3(\sin(x)) incorrectly.
-    Only transform when parentheses contain simple expressions (no LaTeX commands).
-
     Examples:
     - \sin^2 x -> \sin(x)^2 ✓
     - \sin^2(x + y) -> \sin(x + y)^2 ✓
     - \ln^3(\sin(x)) -> \ln^3(\sin(x)) ✓ (unchanged, prevents incorrect transformation)
-    - \log^2(\frac{x}{2}) -> \log^2(\frac{x}{2}) ✓ (unchanged, contains LaTeX)
+    - \log^2(\frac{x}{2}) -> \log^2(\frac{x}{2}) ✓ (unchanged, contains latex)
     """
     if not s:
         return s
@@ -220,17 +202,15 @@ def _normalize_function_powers(s: str) -> str:
     for func in func_names:
         # \sin^2 x -> \sin(x)^2 (single variable)
         s = re.sub(rf'\\{func}\^(\{{[^}}]+\}}|\d+)\s*([a-zA-Z])\b', rf'\\{func}(\2)^{{\1}}', s)
-
         # \sin^2(content) -> \sin(content)^2
-        # BUT ONLY if content contains NO backslashes (LaTeX commands)
-        # This prevents: \ln^3(\sin(x)) -> \ln(\sin(x)^3) [WRONG]
-        # Allows: \sin^2(x + y) -> \sin(x + y)^2 [CORRECT]
+        # BUT ONLY if content contains NO backslashes (latex commands)
+        # this prevents: \ln^3(\sin(x)) -> \ln(\sin(x)^3) [WRONG]
+        # allows: \sin^2(x + y) -> \sin(x + y)^2 [CORRECT]
         s = re.sub(rf'\\{func}\^(\{{[^}}]+\}}|\d+)(\([^\\)]*\))', rf'\\{func}\2^{{\1}}', s)
     return s
 
 
 def _clean_side(s: str) -> str:
-    """Clean and normalize one side of an equation."""
     if s is None:
         return ""
     s = _clean_alignment_markers(s)
@@ -252,10 +232,8 @@ def _clean_side(s: str) -> str:
 
 
 def _standardize_function_representations(s: str) -> str:
-    """Consolidate all function representation variants."""
     if not s:
         return s
-
     function_standardizations = {
         'sech': '\\operatorname{sech}',
         'csch': '\\operatorname{csch}',
@@ -312,7 +290,7 @@ def _normalize_function_evaluations(s: str) -> str:
     """
     if not s:
         return s
-    # Whitelist of commands that we treat as mathematical functions and that
+    # whitelist of commands that we treat as mathematical functions and that
     # are safe to convert from \cmd{arg} -> \cmd(arg).
     WHITELIST = {
         'log', 'ln', 'sin', 'cos', 'tan', 'sec', 'csc', 'cot',
@@ -350,9 +328,9 @@ def _normalize_function_evaluations(s: str) -> str:
                 if end != -1:
                     inner = s[k + 1:end]  # content inside { ... }
                     # if cmd is in whitelist -> convert braced arg to parentheses
-                    # BUT do not convert when inner is empty
+                    # but do not convert when inner is empty
                     if cmd_name in WHITELIST and inner.strip():
-                        # If inner already starts and ends with parentheses, keep them
+                        # if inner already starts and ends with parentheses, keep them
                         inner_stripped = inner.strip()
                         if inner_stripped.startswith('(') and inner_stripped.endswith(')'):
                             out.append(cmd_token + inner_stripped)
@@ -360,13 +338,13 @@ def _normalize_function_evaluations(s: str) -> str:
                             out.append(cmd_token + '(' + inner + ')')
                         i = end + 1
                         continue
-                    # Special handling for \operatorname{...} -> keep as-is
+                    # special handling for \operatorname{...} -> keep as-is
                     if cmd_name == 'operatorname':
                         out.append(cmd_token)
                         out.append(s[k:end + 1])  # keep whole {\dots}
                         i = end + 1
                         continue
-                    # For commands NOT in whitelist (structural), keep original braced group
+                    # for commands NOT in whitelist (structural), keep original braced group
                     out.append(cmd_token)
                     out.append(s[k:end + 1])
                     i = end + 1
@@ -383,42 +361,30 @@ def _normalize_function_evaluations(s: str) -> str:
 def _canonicalize_integral_bounds(s: str) -> str:
     """
     Canonicalize integral bounds to consistent \int_{lower}^{upper} format.
-    
     Handles complex bounds with nested braces like \int_0^{\frac{\pi}{2}}.
     Uses patterns from latex_patterns.py for consistency.
     """
     if not s or '\\int' not in s:
         return s
-    
-    # Apply canonicalization patterns in order (most specific first)
     for pattern, replacement in INTEGRAL_CANONICALIZATION_PATTERNS:
         s = re.sub(pattern, replacement, s)
-    
     return s
 
 def _eliminate_remaining_artifacts(s: str) -> str:
-    """Remove/convert remaining normalization artifacts."""
     if not s:
         return s
-    # Remove all size commands - sort by length descending to avoid partial matches
     size_commands = [
         'bigg', 'Bigg', 'biggl', 'biggr', 'Biggl', 'Biggr',
         'big', 'Big', 'bigl', 'bigr', 'Bigl', 'Bigr',
         'small', 'large', 'Large', 'LARGE', 'huge', 'Huge',
         'tiny', 'scriptsize', 'footnotesize', 'normalsize'
     ]
-    # Sort by length descending to ensure longer patterns match first
     size_commands.sort(key=len, reverse=True)
     for size in size_commands:
-        # Use word boundary to prevent partial matches (e.g., \big from \bigg)
         s = re.sub(rf'\\{re.escape(size)}(?![a-zA-Z])', '', s)
-    
-    # Remove phantom commands that interfere with parsing
     phantom_commands = ['vphantom', 'hphantom', 'phantom']
     for phantom in phantom_commands:
         s = re.sub(rf'\\{phantom}\s*\{{[^}}]*\}}', '', s)
-    
-    # Convert ONLY short function-like \text{} to \operatorname{}
     function_like_text = [
         'Li', 'Si', 'Ci', 'Ei', 'sgn', 'erf', 'erfc', 'erfi',
         'sech', 'csch', 'coth', 'arccot', 'arctanh', 'arcsinh',
@@ -427,10 +393,7 @@ def _eliminate_remaining_artifacts(s: str) -> str:
     for func in function_like_text:
         s = re.sub(rf'\\text\s*\{{\s*{re.escape(func)}\s*\}}', rf'\\operatorname{{{func}}}', s)
     # NOTE: do NOT strip \quad/\qquad here — keep them so split_main_from_conditions can detect spacing-based conditions.
-    # Remove \mathrm{} wrappers
     s = re.sub(r'\\mathrm\s*\{([^}]*)\}', r'\1', s)
-    # Normalize \cdot spacing but do not accidentally match prefixes like \cdots
     s = re.sub(r'\\cdot(?![a-zA-Z])', r' \\cdot ', s)
-    # Clean up multiple spaces
     s = re.sub(r'\s+', ' ', s).strip()
     return s

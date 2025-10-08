@@ -38,8 +38,8 @@
                     <p>
                         In my mathematics research<sup><a href="https://arxiv.org/abs/2508.05770" target="_blank"
                         style="text-decoration: none; color: #007bff; font-size: 1.2em;">†</a></sup> I spend a lot of time searching for integrals online, both on Google and on
-                        Math StackExchange. The frustrating part is that it's almost always textual search: I search for keywords or
-                        function names that appear in the integral, and hope for the best. If I try to search for the integral
+                        Math StackExchange. The frustrating part is that it's almost always textual search. I search for keywords or
+                        function names that appear in the integral and hope for the best. If I try to search for the integral
                         itself, unless it's very simple, both Google and MSE struggle to find anything useful.
                     </p>
                     <p>
@@ -71,8 +71,8 @@
                         <span style="font-variant: small-caps;">SemEmb</span> was doing and pushed it much further, using e-graphs,
                         to generate massive synthetic datasets of equivalent expressions.
                     </p>
-                    <p> This demo is my attempt at putting that idea into practice:
-                        a search engine that thinks about integrals the way mathematicians do.
+                    <p> This demo is my attempt at putting that idea into practice and
+                        a search engine actually understands mathematical expressions.
                     </p>
                 </div>
             </div>
@@ -150,109 +150,34 @@
 
             <!-- Section 2 -->
             <div class="theory-section mb-5">
-                <h2 class="theory-section-header">Model Architecture</h2>
-                <div class="theory-content">
-                    <p>
-                        IntegralIndx uses an <strong>encoder-only transformer</strong> architecture based on the original
-                        E-Gen paper. The model treats mathematical expressions as sequences in prefix (Polish) notation and learns
-                        meaningful embeddings through contrastive learning on mathematically equivalent expressions.
-                    </p>
-
-                    <h4 class="mt-4">Architecture Specifications</h4>
-                    <div class="card bg-light p-3 mb-3">
-                        <ul class="mb-0">
-                            <li><strong>Encoder:</strong> 6-layer transformer (512 hidden dimensions, 8 attention heads, 0.1 dropout)</li>
-                            <li><strong>Feedforward Dimension:</strong> 2048 (standard 4× expansion)</li>
-                            <li><strong>Embedding Dimension:</strong> 512D (mean pooling over sequence)</li>
-                            <li><strong>Vocabulary:</strong> ~100 tokens (operators, functions, constants, variables)</li>
-                            <li><strong>Positional Encoding:</strong> Sinusoidal positional embeddings</li>
-                            <li><strong>Pooling Strategy:</strong> Mean pooling over token representations</li>
-                        </ul>
-                    </div>
-
-                    <!-- Placeholder Figure -->
-                    <div class="theory-figure my-4">
-                        <div class="text-center">
-                            <img src="/static/images/encoder.svg" alt="Encoder architecture" class="img-fluid">
-                            <p class="figure-caption text-center mt-2">
-                                <em>Figure 2: Transformer encoder architecture with mean pooling for mathematical expression embeddings</em>
-                            </p>
-                        </div>
-                    </div>
-
-                    <h4 class="mt-4">Prefix Notation Representation</h4>
-                    <p>
-                        Mathematical expressions are converted to prefix notation (Polish notation) for tokenization.
-                        This representation:
-                    </p>
-                    <ul>
-                        <li>Eliminates ambiguity from operator precedence</li>
-                        <li>Provides a canonical sequential form</li>
-                        <li>Simplifies parsing and generation</li>
-                    </ul>
-                    <div class="card bg-light p-3">
-                        <strong>Example transformations:</strong><br>
-                        <code>x² + sin(x)</code> → <code>"add pow x 2 sin x"</code><br>
-                        <code>log(x + 1)</code> → <code>"log add x 1"</code><br>
-                        <code>polylog(2, x)</code> → <code>"Li 2 x"</code>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 3 -->
-            <div class="theory-section mb-5">
-                <h2 class="theory-section-header">Training Process</h2>
-                <div class="theory-content">
-                    <p>
-                        The model is trained using <strong>contrastive learning</strong> with the InfoNCE loss objective.
-                        The key idea is to pull embeddings of mathematically equivalent expressions closer together in
-                        the embedding space while pushing unrelated expressions apart.
-                    </p>
-
-                    <h4 class="mt-4">Training Objective</h4>
-                    <ul>
-                        <li><strong>Task:</strong> Learn to embed mathematically equivalent expressions near each other</li>
-                        <li><strong>Loss:</strong> InfoNCE (contrastive) loss - maximize similarity of positive pairs, minimize for negatives</li>
-                        <li><strong>Positive Pairs:</strong> Equivalent expressions generated via e-graph rewrites (e.g., sin(x)cos(x) ↔ sin(2x)/2)</li>
-                        <li><strong>Negative Pairs:</strong> Randomly sampled unrelated expressions from the batch</li>
-                        <li><strong>Optimization:</strong> Adam optimizer with learning rate scheduling</li>
-                    </ul>
-
-                    <h4 class="mt-4">Data Augmentation with E-Graphs</h4>
-                    <p>
-                        The power of E-Gen comes from augmenting training data with <strong>mathematically equivalent expressions</strong>
-                        generated using e-graph rewrite rules. This includes:
-                    </p>
-                    <ul>
-                        <li>Algebraic simplifications and expansions</li>
-                        <li>Trigonometric identities (e.g., sin²(x) + cos²(x) = 1)</li>
-                        <li>Logarithmic properties (e.g., log(ab) = log(a) + log(b))</li>
-                        <li>Commutativity and associativity rewrites</li>
-                    </ul>
-
-                    <!-- Placeholder Figure -->
-                    <div class="theory-figure my-4">
-                        <div class="figure-placeholder">
-                            <img src="/static/images/training_curves.svg" alt="Training curves" class="img-fluid">
-                            <p class="figure-caption text-center mt-2">
-                                <em>Figure 3: Training and validation loss curves showing model convergence</em>
-                            </p>
-                        </div>
-                    </div>
-
-                    <p>
-                        By training with contrastive pairs of equivalent forms, the model learns that <code>sin(x)cos(x)</code> and
-                        <code>sin(2x)/2</code> should have similar embeddings (positive pairs), while unrelated expressions
-                        like <code>log(x)</code> should be far apart (negative pairs). This enables semantic similarity search
-                        beyond mere syntactic matching.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Section 4 -->
-            <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Data Collection & Processing Pipeline</h2>
                 <div class="theory-content">
+                    <p>
+                        When I started this project, I thought the data part would be straightforward. Scrape some integrals from Math
+                        StackExchange, throw them in a database, and move on to the interesting ML work.  Naive me.
+                    </p>
+                    <p>
+                        Data processing is easily the hardest part of this entire project. Real-world LaTeX from MSE
+                        is messy, inconsistent, and filled with edge cases I never imagined. People write integrals in dozens of different
+                        ways, use custom macros, nest them in complex equation environments, and mix them with narrative text. I needed to
+                        convert all of this dirty, real-world LaTeX into a clean, normalized form that could be reliably parsed.
+                        The reason why all that LaTeX cleaning is necessary in the first place is that in order to convert expressions into prefix notation for
+                        the transformer, I needed to parse everything through SymPy to get the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree"
+                        target="_blank">Abstract Syntax Tree (AST)</a> representation. An AST is essentially a tree structure that captures the
+                        mathematical meaning of an expression independent of how it's written. Only with this structured representation could I
+                        systematically convert expressions to prefix notation. While there are some good LaTeX-to-SymPy parsers out there, nothing
+                        exactly fit my requirements. I ended up forking the <a href="https://github.com/huggingface/latex2sympy2_extended" target="_blank"><code>latex2sympy2_extended</code></a>
+                        package (which is itself a fork of previous latex2sympy versions) and adding custom parsing capabilities for special functions and integral-specific syntax. Even then, I had to be pretty restrictive: blacklisting certain LaTeX commands that caused
+                        parsing issues, setting timeouts on the parser (20 seconds per expression), and rejecting anything that looked remotely
+                        ambiguous. I'm sure I lost thousands of potentially valid integrals in the process, but reliability was more important
+                        than coverage.
+                    </p>
+                    <p>
+                        What started as "just scrape and parse" became a multi-stage pipeline with normalization, validation, deduplication,
+                        and variable canonicalization. Let me walk you through it.
+                    </p>
+
+                    <h4 class="mt-4">Pipeline Overview</h4>
                     <p>
                         IntegralIndx's dataset comprises <strong>26,730 integral instances</strong> organized into
                         <strong>16,184 unique integrand groups</strong>, curated from over 206,000 Math StackExchange expressions.
@@ -282,8 +207,8 @@
                             <ul class="mb-0">
                                 <li>Parse LaTeX environments (align, equation, gather)</li>
                                 <li>Extract relation chains (A = B = C → [A, B, C])</li>
-                                <li>Handle parametric conditions and multi-statement filtering</li>
-                                <li>Identify equivalent forms from equality chains</li>
+                                <li>Capture equivalent forms automatically</li>
+                                <li>Separate parametric conditions (e.g., "for x > 0")</li>
                             </ul>
                         </div>
                     </div>
@@ -296,8 +221,8 @@
                             <ul class="mb-0">
                                 <li>Advanced integral parsing (definite and indefinite)</li>
                                 <li>SymPy validation for mathematical correctness</li>
-                                <li>Quality filtering: reject piecewise, multi-statement formulas</li>
-                                <li><strong>Result: 36,819 valid integrals (44.7% acceptance rate)</strong></li>
+                                <li>Quality filtering and deduplication</li>
+                                <li><strong>Result: 26,730 validated integrals</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -343,6 +268,107 @@
                                 <div class="stat-label">Acceptance Rate</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="theory-section mb-5">
+                <h2 class="theory-section-header">Training Process</h2>
+                <div class="theory-content">
+                    <p>
+                        The model is trained using <strong>contrastive learning</strong> with the InfoNCE loss objective.
+                        The key idea is to pull embeddings of mathematically equivalent expressions closer together in
+                        the embedding space while pushing unrelated expressions apart.
+                    </p>
+
+                    <h4 class="mt-4">Training Objective</h4>
+                    <ul>
+                        <li><strong>Task:</strong> Learn to embed mathematically equivalent expressions near each other</li>
+                        <li><strong>Loss:</strong> InfoNCE (contrastive) loss - maximize similarity of positive pairs, minimize for negatives</li>
+                        <li><strong>Positive Pairs:</strong> Equivalent expressions generated via e-graph rewrites (e.g., sin(x)cos(x) ↔ sin(2x)/2)</li>
+                        <li><strong>Negative Pairs:</strong> Randomly sampled unrelated expressions from the batch</li>
+                        <li><strong>Optimization:</strong> Adam optimizer with learning rate scheduling</li>
+                    </ul>
+
+                    <h4 class="mt-4">Data Augmentation with E-Graphs</h4>
+                    <p>
+                        The power of E-Gen comes from augmenting training data with <strong>mathematically equivalent expressions</strong>
+                        generated using e-graph rewrite rules. This includes:
+                    </p>
+                    <ul>
+                        <li>Algebraic simplifications and expansions</li>
+                        <li>Trigonometric identities (e.g., sin²(x) + cos²(x) = 1)</li>
+                        <li>Logarithmic properties (e.g., log(ab) = log(a) + log(b))</li>
+                        <li>Commutativity and associativity rewrites</li>
+                    </ul>
+
+                    <!-- Placeholder Figure -->
+                    <div class="theory-figure my-4">
+                        <div class="figure-placeholder">
+                            <img src="/static/images/training_curves.svg" alt="Training curves" class="img-fluid">
+                            <p class="figure-caption text-center mt-2">
+                                <em>Figure 2: Training and validation loss curves showing model convergence</em>
+                            </p>
+                        </div>
+                    </div>
+
+                    <p>
+                        By training with contrastive pairs of equivalent forms, the model learns that <code>sin(x)cos(x)</code> and
+                        <code>sin(2x)/2</code> should have similar embeddings (positive pairs), while unrelated expressions
+                        like <code>log(x)</code> should be far apart (negative pairs). This enables semantic similarity search
+                        beyond mere syntactic matching.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="theory-section mb-5">
+                <h2 class="theory-section-header">Model Architecture</h2>
+                <div class="theory-content">
+                    <p>
+                        IntegralIndx uses an <strong>encoder-only transformer</strong> architecture based on the original
+                        E-Gen paper. The model treats mathematical expressions as sequences in prefix (Polish) notation and learns
+                        meaningful embeddings through contrastive learning on mathematically equivalent expressions.
+                    </p>
+
+                    <h4 class="mt-4">Architecture Specifications</h4>
+                    <div class="card bg-light p-3 mb-3">
+                        <ul class="mb-0">
+                            <li><strong>Encoder:</strong> 6-layer transformer (512 hidden dimensions, 8 attention heads, 0.1 dropout)</li>
+                            <li><strong>Feedforward Dimension:</strong> 2048 (standard 4× expansion)</li>
+                            <li><strong>Embedding Dimension:</strong> 512D (mean pooling over sequence)</li>
+                            <li><strong>Vocabulary:</strong> ~100 tokens (operators, functions, constants, variables)</li>
+                            <li><strong>Positional Encoding:</strong> Sinusoidal positional embeddings</li>
+                            <li><strong>Pooling Strategy:</strong> Mean pooling over token representations</li>
+                        </ul>
+                    </div>
+
+                    <!-- Placeholder Figure -->
+                    <div class="theory-figure my-4">
+                        <div class="text-center">
+                            <img src="/static/images/encoder.svg" alt="Encoder architecture" class="img-fluid">
+                            <p class="figure-caption text-center mt-2">
+                                <em>Figure 3: Transformer encoder architecture with mean pooling for mathematical expression embeddings</em>
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4">Prefix Notation Representation</h4>
+                    <p>
+                        Mathematical expressions are converted to prefix notation (Polish notation) for tokenization.
+                        This representation:
+                    </p>
+                    <ul>
+                        <li>Eliminates ambiguity from operator precedence</li>
+                        <li>Provides a canonical sequential form</li>
+                        <li>Simplifies parsing and generation</li>
+                    </ul>
+                    <div class="card bg-light p-3">
+                        <strong>Example transformations:</strong><br>
+                        <code>x² + sin(x)</code> → <code>"add pow x 2 sin x"</code><br>
+                        <code>log(x + 1)</code> → <code>"log add x 1"</code><br>
+                        <code>polylog(2, x)</code> → <code>"Li 2 x"</code>
                     </div>
                 </div>
             </div>
@@ -414,9 +440,6 @@
                             "Fast Decision Procedures Based on Congruence Closure."
                             <em>Journal of the ACM, 27(2), 356-364.</em>
                         </p>
-                        <p class="mb-0">
-                            E-graphs were originally invented for automated theorem proving and congruence closure.
-                        </p>
                     </div>
 
                     <div class="card bg-light p-3 mb-3">
@@ -424,9 +447,6 @@
                             <strong>Equality Saturation:</strong> Tate, R., Stepp, M., Tatlock, Z., & Lerner, S. (2009).
                             "Equality Saturation: A New Approach to Optimization."
                             <em>Proceedings of the 36th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL 2009), 264-276.</em>
-                        </p>
-                        <p class="mb-0">
-                            Introduced the technique of using e-graphs for program optimization via equality saturation.
                         </p>
                     </div>
 
@@ -475,7 +495,7 @@
                         </p>
                         <p class="mb-2">
                             <strong>Repository:</strong>
-                            <a href="https://github.com/yourusername/IntegralIndx" target="_blank">github.com/yourusername/IntegralIndx</a>
+                            <a href="https://github.com/noamshh/IntegralIndx" target="_blank">github.com/noamshh/IntegralIndx</a>
                         </p>
                         <p class="mb-2 text-muted" style="font-size: 0.9rem;">
                             <strong>Non-Commercial Use Only:</strong> This is a personal research project for educational

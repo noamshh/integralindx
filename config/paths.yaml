@@ -35,6 +35,7 @@ data:
 
 # E-graph
 egraph:
+  binary: "bin/egen"
   equivalences: "data/egraph/equivalence_classes.jsonl"
   training_pairs: "data/egraph/training_pairs.jsonl"
   augmented_data: "data/egraph/augmented_training_data.jsonl"
