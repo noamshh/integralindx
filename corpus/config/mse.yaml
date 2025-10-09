@@ -1,0 +1,38 @@
+id: mse
+name: "Math Stack Exchange"
+scraper: mse_scraper
+base_url: "https://math.stackexchange.com"
+api_base: "https://api.stackexchange.com/2.3"
+site: "math.stackexchange.com"
+license: "CC BY-SA 4.0"
+rate_limit: 0.1
+user_agent: "IntegralIndx/0.1 (Integral Similarity Index)"
+entry_urls: []
+page_selectors:
+  formula_selectors:
+    - "annotation[encoding='application/x-tex']"
+api_settings:
+  tags:
+    - "closed-form"
+    - "integration"
+    - "sequences-and-series"
+    - "definite-integrals"
+    - "hypergeometric-function"
+    - "special-functions"
+    - "elliptic-integrals"
+    - "polylogarithm"
+    - "theta-functions"
+    - "indefinite-integrals"
+    - "trigonometric-integrals"
+    - "infinite-product"
+    - "pi"
+    - "binomial-coefficients"
+    - "harmonic-numbers"
+    - "zeta-functions"
+    - "improper-integrals"
+    - "substitution-integration"
+    - "integration-by-parts"
+  pages_per_run: 80
+  page_size: 100
+  sort_order: "votes"
+  api_key: "${MSE_API_KEY}"
