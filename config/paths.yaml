@@ -32,6 +32,7 @@ data:
   embeddings: "data/embeddings"
   search_index: "data/search_index"
   evaluation: "data/evaluation"
+  integral_db: "data/integral.db"
 
 # E-graph
 egraph:

@@ -3,9 +3,10 @@ from typing import Dict, Set
 from sympy import sympify, symbols, simplify, Function
 from sympy.core.function import UndefinedFunction
 
-# canonical parameter alphabet
-# skip common bound names (a,b,c,d,e,i), function names (f,g,h), and confusing letters (o,l)
-CANONICAL_PARAMS = ['s', 't', 'u', 'v', 'w', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 'y', 'z']
+# canonical parameter alphabet for ML tokenization
+# max 3 parameters normalized to a, b, c (deterministic ordering)
+# this ensures fixed vocabulary for transformer model
+CANONICAL_PARAMS = ['a', 'b', 'c']
 
 
 def extract_variables_from_expression(expr_str: str) -> Set[str]:
@@ -31,26 +32,45 @@ def extract_variables_from_expression(expr_str: str) -> Set[str]:
 def create_variable_mapping(integration_var: str, integrand_vars: Set[str]) -> Dict[str, str]:
     """
     Create mapping from original variable names to canonical names.
+
+    Maps integration variable to 'x' and up to 3 parameters to 'a', 'b', 'c'.
+    Uses sorted order for deterministic mapping.
+
     Args:
-        integration_var: The integration variable (e.g., 't', 'u', 'theta')
+        integration_var: The integration variable (e.g., 't', 'u', 'alpha')
         integrand_vars: All variables found in the integrand
 
     Returns:
         Dictionary mapping original variables to normalized names
+        Max 3 params → a, b, c (sorted alphabetically for determinism)
+
+    Examples:
+        >>> create_variable_mapping('t', {'t', 'alpha', 'beta'})
+        {'t': 'x', 'alpha': 'a', 'beta': 'b'}
+
+        >>> create_variable_mapping('x', {'x', 'r', 's', 't'})
+        {'x': 'x', 'r': 'a', 's': 'b', 't': 'c'}
     """
     mapping = {}
+
     # integration variable always maps to 'x'
     if integration_var and integration_var in integrand_vars:
         mapping[integration_var] = 'x'
         integrand_vars = integrand_vars - {integration_var}
-    # map remaining variables to canonical parameter names
-    remaining_vars = sorted(integrand_vars)  # sort for deterministic mapping
+
+    # map remaining variables to canonical parameter names (a, b, c)
+    # sort for deterministic mapping
+    remaining_vars = sorted(integrand_vars)
+
     for i, var in enumerate(remaining_vars):
-        if i < len(CANONICAL_PARAMS):
+        if i < len(CANONICAL_PARAMS):  # max 3 params
             mapping[var] = CANONICAL_PARAMS[i]
         else:
-            # fallback for too many variables
-            mapping[var] = f'p{i - len(CANONICAL_PARAMS) + 1}'
+            # this shouldn't happen if symbol validation is applied first
+            # but provide fallback just in case
+            logger.warning(f"More than {len(CANONICAL_PARAMS)} parameters found: {remaining_vars}")
+            mapping[var] = f'param{i+1}'  # fallback naming
+
     return mapping
 
 

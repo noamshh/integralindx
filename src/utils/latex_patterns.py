@@ -50,14 +50,6 @@ CONNECTIVE_PATTERNS = [
     r'\s*\band\b\s*',
     r'\s*\\text\s*\{\s*or\s*\}\s*',
 ]
-REPETITIVE_SYMBOL_PATTERNS = [
-    r'(\\gt;|&gt;|\\&gt;|>){4,}',
-    r'(\\lt;|&lt;|\\&lt;|<){4,}',
-    r'[=]{3,}',
-    r'[.]{4,}',
-    r'[-]{5,}',
-    r'[*]{3,}',
-]
 PIECEWISE_INDICATORS = [
             r'\\text\s*\{\s*if\s',
             r'\\text\s*\{\s*for\s',
@@ -87,21 +79,9 @@ INTEGRAL_CANONICALIZATION_PATTERNS = [
 ]
 
 DIFFERENTIAL_PATTERNS = [
-    r'\\(?:textrm|mathrm|text)\s*\{\s*d\s*\}\s*([a-zA-Z]+)',       # \textrm{d}x, \mathrm{d}x, \text{d}x → dx
-    r'\\(?:textrm|mathrm|text)\s*\{\s*d([a-zA-Z]+)\s*\}',          # \textrm{dx}, \mathrm{dx}, \text{dx} → dx
-    r'\\,d([a-zA-Z]+)',                                             # \,dx (with thin space) → dx
-]
-INTEGRAL_MULTIDIM_EXCLUDE = [
-    r'\\iint',
-    r'\\iiint',
-    r'\\oiint',
-    r'\\oiiint',
-]
-INTEGRAL_VARIABLE_PATTERNS = [
-    r'[IJ]\s*=\s*\\int',                     # I = \int, J = \int
-    r'[IJ]_\{[^}]+\}\s*=\s*\\int',          # I_{n} = \int, J_{n} = \int
-    r'[IJ]_[a-zA-Z0-9]\s*=\s*\\int',        # I_n = \int, J_n = \int
-    r'[IJ]\([^)]*\)\s*=\s*\\int',           # I(x) = \int, J(x) = \int
+    r'\\(?:textrm|mathrm|text)\s*\{\s*d\s*\}\s*([a-zA-Z]+)',       # \textrm{d}x, \mathrm{d}x, \text{d}x -> dx
+    r'\\(?:textrm|mathrm|text)\s*\{\s*d([a-zA-Z]+)\s*\}',          # \textrm{dx}, \mathrm{dx}, \text{dx} -> dx
+    r'\\,d([a-zA-Z]+)',                                             # \,dx (with thin space) -> dx
 ]
 MATRIX_PATTERNS = [
         r'\\begin\{pmatrix\}',
@@ -150,13 +130,9 @@ RE_SPACE_BEFORE_BRACE = re.compile(r'\s*{\s*')
 RE_SPACE_AFTER_BRACE = re.compile(r'\s*}\s*')
 RE_BACKSLASH_SPACE = re.compile(r'\\\s+([A-Za-z])')
 RE_TEXT = re.compile(r'\\text\s*{([^}]*)}')
-WS_TOKENS = re.compile(r'^(?:\s|\\;|\\,|\\quad|\\qquad|\\vspace\{[^}]*\})*$')
 TAG_PATTERN = re.compile(r'\\tag\{[^}]*\}|\\tag[^\s\\]*')
-SIZE_WRAPPER_PATTERN = re.compile(r'\{\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\s*(.*?)\}', re.DOTALL)
 SIZE_COMMAND_PATTERN = re.compile(r'\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\s*')
 REQUIRE_PATTERN = re.compile(r'\\require\{[^}]*\}')
 DIFFERENTIAL_PATTERN = re.compile(r'\\d([xyztuvsw])\b')
 TEX_ENV_PATTERN = re.compile(r'\\(eqalign|align|eqalignno|leqalignno)\{(.*)\}', re.DOTALL)
-ALIGNMENT_MARKER_PATTERN = re.compile(r'&.*=')
-REPETITIVE_SYMBOL_COMPILED = [re.compile(p) for p in REPETITIVE_SYMBOL_PATTERNS]
 CONNECTIVE_COMPILED = [re.compile(p, re.IGNORECASE) for p in CONNECTIVE_PATTERNS]

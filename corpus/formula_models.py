@@ -5,6 +5,8 @@ from pathlib import Path
 import unicodedata
 
 from src.utils.provenance import now_iso, sha256_hex
+from src.utils.integrand_canonicalization import canonicalize_integrand
+
 
 @dataclass
 class BaseFormula:
@@ -132,15 +134,24 @@ class IntegralFormula(BaseFormula):
                           normalized_latex: str, chain_position: int,
                           sympy_result: Dict[str, str], equivalent_forms: List[str],
                           author_name: Optional[str] = None,
-                          author_link: Optional[str] = None) -> "IntegralFormula":
-        from src.utils.integrand_canonicalization import canonicalize_integrand
+                          author_link: Optional[str] = None,
+                          auto_canonicalize: bool = True) -> "IntegralFormula":
         mse_question_id = normalized_formula.provenance.get('item_id', 0) if normalized_formula.provenance else 0
         mse_answer_id = None
         origin = normalized_formula.provenance.get('origin', '') if normalized_formula.provenance else ''
         if 'answer' in origin:
             mse_answer_id = mse_question_id
-        integrand_canonical, integrand_hash = canonicalize_integrand(sympy_result['integrand'])
-        integrand_family = None
+
+        # canonicalize immediately after parsing (old behavior)
+        # or skip canonicalization for later (new pipeline: validate → normalize → then canonicalize)
+        if auto_canonicalize:
+            integrand_canonical, integrand_hash = canonicalize_integrand(sympy_result['integrand'])
+            integrand_family = None
+        else:
+            # skip canonicalization - will be done after variable normalization
+            integrand_canonical = None
+            integrand_hash = None
+            integrand_family = None
 
         return cls(
             id=cls.make_id(normalized_formula.id, normalized_latex, chain_position),

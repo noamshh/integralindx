@@ -3,8 +3,8 @@ from typing import List, Set
 
 logger = logging.getLogger(__name__)
 
-# valid tokens for prefix notation
-# based on src/utils/prefix_notation.py::SYMPY_TO_PREFIX
+# frozen global vocabulary reference: src/models/egen/vocab.py
+# all tokens must be whitelisted in the global vocabulary
 VALID_OPERATORS = {
     "add", "sub", "mul", "div", "pow", "inv", "sqrt",
     "pow2", "pow3", "pow4", "pow5",
@@ -13,7 +13,8 @@ VALID_OPERATORS = {
     "asin", "acos", "atan", "acot", "asec", "acsc",
     "sinh", "cosh", "tanh", "coth", "sech", "csch",
     "asinh", "acosh", "atanh", "acoth", "asech", "acsch",
-    "Li",
+    # special functions (IntegralIndx extensions)
+    "Li", "zeta", "re", "im",
 }
 
 VALID_CONSTANTS = {
@@ -22,10 +23,10 @@ VALID_CONSTANTS = {
 }
 
 VALID_VARIABLES = {
-    "x", "s", "t", "u", "v", "w", "a", "b", "c",
+    "x", "a", "b", "c",
 }
 
-SPECIAL_TOKENS = {"UNK", "PAD", "SOE", "EOE"}
+SPECIAL_TOKENS = {"PAD", "SOE", "EOE"}
 
 
 def validate_prefix_expr(expr: str) -> bool:

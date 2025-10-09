@@ -3,16 +3,12 @@
 
 model:
   name: "integralindx-contrastive"
-
-  # encoder architecture
   encoder:
-    dim: 512                    # embedding dimension
-    num_layers: 6               # encoder layers
-    num_heads: 8                # attention heads
-    feedforward_dim: 2048       # feedforward dimension
-    dropout: 0.1                # dropout probability
-    max_seq_len: 200            # max sequence length
-    vocab_size: null            # determined by tokenizer at runtime
-
-  # mean pooling for embeddings
+    dim: 512
+    num_layers: 6
+    num_heads: 8
+    feedforward_dim: 2048
+    dropout: 0.1
+    max_seq_len: 200
+    vocab_size: null
   pooling: "mean"

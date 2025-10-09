@@ -24,41 +24,21 @@ def canonicalize_integrand(sympy_integrand_str: str) -> Tuple[str, str]:
     Returns:
         Tuple of (canonical_form, hash)
         - canonical_form: Simplified SymPy string representation (or unsimplified if timeout)
-        - hash: 12-character SHA256 hash for fast grouping
-
-    Examples:
-        canonicalize_integrand("sin(2*x)") -> ("sin(2*x)", "abc123def456")
-        canonicalize_integrand("x**2") -> ("x**2", "def456abc123")
+        - hash: 12-character SHA256 hash
     """
     try:
-        # Parse the integrand
         expr = sympify(sympy_integrand_str)
-        # Try to simplify with timeout, fallback to unsimplified if timeout
         canonical_expr = _simplify_with_timeout(expr, timeout_seconds=20)
         canonical = str(canonical_expr)
-        # Compute deterministic hash
         integrand_hash = sha256_hex(canonical)[:12]
         return canonical, integrand_hash
     except Exception:
-        # Fallback for parsing errors - use original string
         canonical = sympy_integrand_str.strip()
         integrand_hash = sha256_hex(canonical)[:12]
         return canonical, integrand_hash
 
 
 def get_integrand_family(integrand_canonical: str) -> str:
-    """
-    List all mathematical functions present in the integrand.
-    Args:
-        integrand_canonical: Canonical form of integrand
-    Returns:
-        Comma-separated list of function names found (e.g., "sin,exp,sqrt")
-    Examples:
-        get_integrand_family("sin(2*x)") -> "sin"
-        get_integrand_family("x**2") -> "pow"
-        get_integrand_family("exp(x)*log(x)") -> "exp,log"
-        get_integrand_family("sqrt(x)*tan(x)") -> "sqrt,tan"
-    """
     canonical_lower = integrand_canonical.lower()
     functions_found = set()
     for func in ['sin', 'cos', 'tan', 'sec', 'csc', 'cot']:
@@ -79,16 +59,16 @@ def get_integrand_family(integrand_canonical: str) -> str:
         functions_found.add('log')
     if 'sqrt(' in canonical_lower:
         functions_found.add('sqrt')
-    if 'polylog(' in canonical_lower or 'li(' in canonical_lower:
-        functions_found.add('polylog')
-    if 'gamma(' in canonical_lower:
-        functions_found.add('gamma')
-    if 'erf(' in canonical_lower:
-        functions_found.add('erf')
     if 'abs(' in canonical_lower:
         functions_found.add('abs')
-    if 'unk_func(' in canonical_lower:  # check both UNK_FUNC and unk_func
-        functions_found.add('unk_func')
+    if 'polylog(' in canonical_lower or 'li(' in canonical_lower:
+        functions_found.add('polylog')
+    if 'zeta(' in canonical_lower:
+        functions_found.add('zeta')
+    if 're(' in canonical_lower:
+        functions_found.add('re')
+    if 'im(' in canonical_lower:
+        functions_found.add('im')
     if '**' in canonical_lower or '^' in canonical_lower:
         functions_found.add('pow')
     if '/' in canonical_lower:
