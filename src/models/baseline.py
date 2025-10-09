@@ -5,9 +5,6 @@ import numpy as np
 from pathlib import Path
 from typing import List, Union
 from sklearn.feature_extraction.text import TfidfVectorizer
-
-from src.models.base_embedder import BaseEmbedder
-
 try:
     from sentence_transformers import SentenceTransformer
     SENTENCE_TRANSFORMERS_AVAILABLE = True
@@ -15,13 +12,17 @@ except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
     logging.warning("sentence-transformers not available")
 
+from src.models.base_embedder import BaseEmbedder
+
 logger = logging.getLogger(__name__)
 
 
 class BaselineEmbedder(BaseEmbedder):
-    """Baseline embedder supporting TF-IDF and Sentence-BERT."""
+    """Baseline embedder supporting TF-IDF and Sentence-BERT
+    TF-IDF requires fit() before encode()"""
     def __init__(self, method: str = 'tfidf', embedding_dim: int = 384):
         super().__init__(embedding_dim=embedding_dim, method=method)
+        self.is_fitted = False
         if method == 'tfidf':
             self.vectorizer = TfidfVectorizer(
                 ngram_range=(1, 3), analyzer='char', max_features=embedding_dim,
@@ -32,6 +33,7 @@ class BaselineEmbedder(BaseEmbedder):
                 raise ImportError("sentence-transformers required")
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.embedding_dim = 384
+            self.is_fitted = True  # pretrained, ready to use
         else:
             raise ValueError(f"unknown method: {method}")
 
@@ -39,15 +41,14 @@ class BaselineEmbedder(BaseEmbedder):
         if self.method == 'tfidf':
             logger.info(f"fitting TF-IDF on {len(expressions)} expressions")
             self.vectorizer.fit(expressions)
-        self.is_fitted = True
+            self.is_fitted = True
         return self
 
     def encode(self, expressions: Union[str, List[str]]) -> np.ndarray:
         if not self.is_fitted:
-            raise ValueError("embedder not fitted")
+            raise ValueError("embedder not fitted. call fit() first for TF-IDF")
         if isinstance(expressions, str):
             expressions = [expressions]
-
         if self.method == 'tfidf':
             return self.vectorizer.transform(expressions).toarray()
         else:  # sentence_bert

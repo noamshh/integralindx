@@ -4,7 +4,7 @@ import logging
 from typing import List, Dict, Optional
 import sympy as sp
 
-from src.models.baseline import BaselineEmbedder
+from src.models.base_embedder import BaseEmbedder
 from corpus.formula_models import IntegrandGroup
 from src.utils.variable_normalization import normalize_parameters
 
@@ -19,7 +19,7 @@ class IntegrandGroupSearch:
         self.index_type = index_type
         self.index = None
         self.groups: List[IntegrandGroup] = []
-        self.embedder: Optional[BaselineEmbedder] = None
+        self.embedder: Optional[BaseEmbedder] = None
         self._id_to_idx = {}  # mapping from group ID to index position
         self._hash_to_idx = {}  # mapping from integrand_hash to index position
         if index_type == 'flat':
@@ -28,7 +28,7 @@ class IntegrandGroupSearch:
             raise ValueError(f"unsupported index type: {index_type}")
         logger.info(f"initialized {index_type} FAISS index for groups with {embedding_dim}D embeddings")
 
-    def build_index(self, embedder: BaselineEmbedder, batch_size: int = 1000) -> None:
+    def build_index(self, embedder: BaseEmbedder, batch_size: int = 1000) -> None:
         if not self.groups:
             raise ValueError("no integrand groups loaded")
         self.embedder = embedder
