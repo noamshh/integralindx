@@ -7,4 +7,4 @@ hydra:
   run:
     dir: ./outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
   job:
-    chdir: false  # don't change working directory
+    chdir: false

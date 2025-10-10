@@ -32,7 +32,7 @@ models:
   runs: "data/models/runs"  # tensorboard logs
 
 egraph:
-  binary: "bin/egen"
+  binary: "bin/egen.exe"
 
 files:
   contributing_source_ids: "data/contributing_source_ids.txt"

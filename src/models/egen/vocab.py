@@ -114,13 +114,3 @@ def get_all_tokens():
 
 def get_vocab_size():
     return len(get_all_tokens())
-
-__all__ = [
-    'CONSTANTS',
-    'VARIABLES',
-    'OPERATORS',
-    'SYMPY_TO_PREFIX',
-    'SPECIAL_TOKENS',
-    'get_all_tokens',
-    'get_vocab_size',
-]

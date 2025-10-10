@@ -382,9 +382,9 @@ pub fn math_rule() -> Vec<Rewrite> {
         rw!("-log(x)=log(1/x)"; "(* -1 (log ?x))" => "(log (/ 1 ?x))" if not_zero("?x")),
 
         /* log-exp inverses */
-        rw!("log(e^x)=x"; "(log (exp ?x))" => "?x"),
+        rw!("log(exp(x))=x"; "(log (exp ?x))" => "?x"),
         rw!("log(e^x)=x"; "(log (pow e ?x))" => "?x"),
-        rw!("e^log(x)=x"; "(exp (log ?x))" => "?x" if not_zero("?x")),
+        rw!("exp(log(x))=x"; "(exp (log ?x))" => "?x" if not_zero("?x")),
         rw!("e^log(x)=x"; "(pow e (log ?x))" => "?x" if not_zero("?x")),
         /* ========================================================================== */
 

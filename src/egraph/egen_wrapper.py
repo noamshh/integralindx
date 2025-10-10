@@ -3,142 +3,147 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict
+from src.utils.sexpression import prefix_to_sexp
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class EGenConfig:
-    binary_path: Path                  # path to egen binary (required)
-    n_equiv: int = 20                  # number of equivalent expressions to generate
-    token_limit: int = 12              # max token limit for saturation
-    time_limit: int = 300              # time limit in seconds
+    binary_path: Path
+    n_equiv: int = 20
+    token_limit: int = 12
+    time_limit: int = 300
+    optimized: bool = True
 
-
-def _run_egen(expr: str, config: EGenConfig) -> subprocess.CompletedProcess:
-    """
-    Run the E-Gen Rust binary on a single expression
-    Args:
-        expr: prefix notation expression (space-separated)
-        config: e-graph configuration
-    Returns:
-        subprocess result
-    Raises:
-        FileNotFoundError: if binary not found or invalid
-        subprocess.TimeoutExpired: if execution times out
-        subprocess.CalledProcessError: if binary fails
-    """
-    binary_path = config.binary_path
-    if not binary_path.exists():
-        raise FileNotFoundError(f"E-Gen binary not found at: {binary_path}")
-    # build command
-    # E-Gen CLI takes -n <n_equiv> -l <token_limit> -t <time_limit> <expr>
-    cmd = [
-        str(binary_path),
-        '-n', str(config.n_equiv),
-        '-l', str(config.token_limit),
-        '-t', str(config.time_limit),
-        expr
-    ]
-    logger.debug(f"running E-Gen: {' '.join(cmd)}")
-    timeout = config.time_limit + 60
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=True
-    )
-    return result
-
-
-def _parse_output(output: str) -> List[str]:
-    """
-    Parse E-Gen binary output into list of equivalent expressions
-    output format (from Rust binary):
-    - first line: original expression
-    - subsequent lines: equivalent expressions
-    - empty lines separate sections
-    Args:
-        output: stdout from E-Gen binary
-    Returns:
-        list of equivalent expressions (excluding original)
-    """
-    lines = output.strip().split('\n')
+def _parse_file_output(output_content: str) -> List[str]:
+    lines = output_content.strip().split('\n')
     equivalents = []
-    skip_first = True  # first line is the original expression
+    SYMBOL_TO_WORD_MAP = {
+        '+': 'add',
+        '-': 'sub',
+        '*': 'mul',
+        '/': 'div',
+    }
     for line in lines:
         line = line.strip()
         if not line:
-            continue  # skip empty lines
-        if skip_first:
-            skip_first = False
             continue
-        # clean up parentheses if needed (Rust outputs s-expressions)
-        # example: "(+ x 1)" -> we might want "add x 1"
-        # but for now, keep as-is since Rust uses s-expr format
-        equivalents.append(line)
-
+        tokens = line.split()
+        if tokens and tokens[0] in SYMBOL_TO_WORD_MAP:
+            tokens[0] = SYMBOL_TO_WORD_MAP[tokens[0]]
+        converted = ' '.join(tokens)
+        equivalents.append(converted)
     return equivalents
-
-
-def generate_equivalents(expr: str, config: EGenConfig) -> List[str]:
-    """
-    Generate equivalent expressions for a single expression
-    Args:
-        expr: expression in prefix notation (space-separated)
-        config: e-graph configuration
-    Returns:
-        list of equivalent expressions in same format
-    Raises:
-        FileNotFoundError: if E-Gen binary not found
-        subprocess.TimeoutExpired: if generation times out
-        RuntimeError: if generation fails
-    """
-    try:
-        result = _run_egen(expr, config)
-        equivalents = _parse_output(result.stdout)
-        logger.info(
-            f"generated {len(equivalents)} equivalents for: {expr[:50]}..."
-        )
-        return equivalents
-    except subprocess.TimeoutExpired as e:
-        logger.error(f"E-Gen timed out after {config.time_limit}s for: {expr}")
-        raise RuntimeError(f"E-Gen timeout: {e}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"E-Gen failed for: {expr}\nstderr: {e.stderr}")
-        raise RuntimeError(f"E-Gen error: {e.stderr}")
-    except Exception as e:
-        logger.error(f"unexpected error generating equivalents: {e}")
-        raise
 
 
 def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = False) -> Dict[str, List[str]]:
     """
-    Generate equivalent expressions for multiple expressions
+    Generate equivalent expressions for multiple expressions using file I/O
+
+    More efficient than single-expression mode - writes all seeds to input file,
+    runs E-Gen once, then parses output file.
     Args:
-        exprs: list of expressions in prefix notation
+        exprs: list of expressions in prefix notation (e.g., ["add x 1", "mul x 2"])
         config: e-graph configuration with binary path
         fail_on_error: if True, raise on first error; if False, skip failed expressions
-
     Returns:
         dict mapping original expression to list of equivalents
         failed expressions are excluded from results (unless fail_on_error=True)
     """
-    results = {}
-    failed = []
-    for i, expr in enumerate(exprs):
-        try:
-            equivalents = generate_equivalents(expr, config)
-            results[expr] = equivalents
-            if (i + 1) % 10 == 0:
-                logger.info(f"processed {i + 1}/{len(exprs)} expressions")
-        except Exception as e:
-            logger.warning(f"failed to process expression: {expr}\nerror: {e}")
-            failed.append((expr, str(e)))
+    import tempfile
+
+    if not exprs:
+        return {}
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as input_file:
+        input_path = Path(input_file.name)
+        for expr in exprs:
+            sexp = prefix_to_sexp(expr)
+            input_file.write(sexp + '\n')
+    output_path = input_path.with_suffix('.out.txt')
+    try:
+        cmd = [str(config.binary_path)]
+        if config.optimized:
+            cmd.append('-f')
+        cmd.extend([
+            '-i', str(input_path),
+            '-o', str(output_path),
+            '-n', str(config.n_equiv),
+            '-l', str(config.token_limit),
+            '-t', str(config.time_limit),
+        ])
+        logger.info(f"running E-Gen on {len(exprs)} expressions...")
+        logger.debug(f"command: {' '.join(cmd)}")
+        timeout = config.time_limit * len(exprs) + 60
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False
+        )
+        if not output_path.exists():
+            logger.error(f"E-Gen did not create output file: {output_path}")
+            logger.error(f"stdout: {result.stdout}")
+            logger.error(f"stderr: {result.stderr}")
             if fail_on_error:
-                raise
-    if failed:
-        logger.warning(f"failed to generate equivalents for {len(failed)}/{len(exprs)} expressions")
-    logger.info(f"batch complete: {len(results)}/{len(exprs)} successful, {len(failed)} failed")
-    return results
+                raise RuntimeError("E-Gen did not create output file")
+            return {}
+        with open(output_path) as f:
+            output_content = f.read()
+        logger.debug(f"output file size: {len(output_content)} chars")
+
+        # parse output file - format is:
+        # original1
+        # equiv1_1
+        # equiv1_2
+        # <blank>
+        # original2
+        # equiv2_1
+        # ...
+        all_equivalents = _parse_file_output(output_content)
+        results = {}
+        current_group = []
+        for equiv in all_equivalents:
+            current_group.append(equiv)
+
+        # simple grouping: assume output is in same order as input
+        # first expr in each group is the original (in our format), rest are equivalents
+        # split by finding where we have exactly n_equiv + 1 expressions
+        if all_equivalents:
+            equiv_idx = 0
+            for expr in exprs:
+                group_equivalents = []
+                if equiv_idx < len(all_equivalents):
+                    equiv_idx += 1
+                while equiv_idx < len(all_equivalents) and len(group_equivalents) < config.n_equiv:
+                    group_equivalents.append(all_equivalents[equiv_idx])
+                    equiv_idx += 1
+                if group_equivalents:
+                    results[expr] = group_equivalents
+                else:
+                    logger.warning(f"no equivalents generated for: {expr}")
+        logger.info(f"batch complete: generated equivalents for {len(results)}/{len(exprs)} expressions")
+        return results
+
+    except subprocess.TimeoutExpired as e:
+        logger.error(f"E-Gen timed out after {timeout}s")
+        if fail_on_error:
+            raise RuntimeError(f"E-Gen timeout: {e}")
+        return {}
+    except subprocess.CalledProcessError as e:
+        logger.error(f"E-Gen failed:\n{e.stderr}")
+        if fail_on_error:
+            raise RuntimeError(f"E-Gen error: {e.stderr}")
+        return {}
+    except Exception as e:
+        logger.error(f"unexpected error in batch generation: {e}")
+        if fail_on_error:
+            raise
+        return {}
+    finally:
+        # cleanup temp files
+        try:
+            input_path.unlink(missing_ok=True)
+            output_path.unlink(missing_ok=True)
+        except Exception:
+            pass
