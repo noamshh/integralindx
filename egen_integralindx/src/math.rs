@@ -24,9 +24,8 @@ define_language! {
         "i"=Integral([Id;2]),
 
         /* log & exponential */
-        // "exp"=Exp(Id),
-        "ln"=Ln(Id),
-        "log"=Log([Id;2]),
+        "exp"=Exp(Id),
+        "log"=Log(Id),
 
         /* trig */
         "sin"=Sin(Id),
@@ -61,6 +60,9 @@ define_language! {
         "acoth"=ACoth(Id),
 
         "abs"=Abs(Id),
+        /* special functions */
+        "Li"=Polylog([Id;2]),
+        "zeta"=Zeta(Id),
 
         Constant(Constant),
         Symbol(Symbol),
@@ -224,8 +226,7 @@ fn le_zero(var: &str) -> impl Fn(&mut MathEGraph, Id, &Subst) -> bool {
 /// 4. exponential
 /// 5. hyper
 /// 6. inv hyper
-/// 7. derivative
-/// 8. integration
+
 #[rustfmt::skip]
 pub fn math_rule() -> Vec<Rewrite> {
     vec![
@@ -334,37 +335,88 @@ pub fn math_rule() -> Vec<Rewrite> {
         /* ========================================================================== */
 
         /* ============================= exponent rules ============================= */
-        // rw!("exp(0)"; "(exp 0)" => "1"),
-        // rw!("exp(1)"; "(exp 1)" => "E"),
-        /* basic rule */
-        // rw!("exp-of-prod"; "(* (exp ?x) (exp ?y))" => "(exp (+ ?x ?y))"),
-        // rw!("exp-of-quotient"; "(/ (exp ?x) (exp ?y))" => "(exp (- ?x ?y))"),
-        // rw!("pow-of-exp"; "(pow (exp ?x) ?y)" => "(exp (* ?x ?y))"),
+        /* basic exp identities */
+        rw!("exp(0)=1"; "(exp 0)" => "1"),
+        rw!("1=exp(0)"; "1" => "(exp 0)"),
+        rw!("exp(log(x))=x"; "(exp (log ?x))" => "?x" if not_zero("?x")),
+        rw!("log(exp(x))=x"; "(log (exp ?x))" => "?x"),
+
+        /* exp product/quotient rules */
+        rw!("exp(x)*exp(y)=exp(x+y)"; "(* (exp ?x) (exp ?y))" => "(exp (+ ?x ?y))"),
+        rw!("exp(x+y)=exp(x)*exp(y)"; "(exp (+ ?x ?y))" => "(* (exp ?x) (exp ?y))"),
+        rw!("exp(x)/exp(y)=exp(x-y)"; "(/ (exp ?x) (exp ?y))" => "(exp (- ?x ?y))"),
+        rw!("exp(x-y)=exp(x)/exp(y)"; "(exp (- ?x ?y))" => "(/ (exp ?x) (exp ?y))"),
+        rw!("1/exp(x)=exp(-x)"; "(/ 1 (exp ?x))" => "(exp (* -1 ?x))"),
+        rw!("exp(-x)=1/exp(x)"; "(exp (* -1 ?x))" => "(/ 1 (exp ?x))"),
+
+        /* exp power rules */
+        rw!("exp(x)^y=exp(x*y)"; "(pow (exp ?x) ?y)" => "(exp (* ?x ?y))"),
+        rw!("exp(x*y)=exp(x)^y"; "(exp (* ?x ?y))" => "(pow (exp ?x) ?y)" if is_const("?y")),
+        rw!("(exp(x))^a=exp(a*x)"; "(pow (exp ?x) ?a)" => "(exp (* ?a ?x))"),
+
+        /* exp-log combinations */
+        rw!("exp(a*log(x))=x^a"; "(exp (* ?a (log ?x)))" => "(pow ?x ?a)" if not_zero("?x")),
+        rw!("x^a=exp(a*log(x))"; "(pow ?x ?a)" => "(exp (* ?a (log ?x)))" if not_zero("?x")),
+
+        /* exp(x) <-> e^x equivalence */
+        rw!("exp(x)=e^x"; "(exp ?x)" => "(pow e ?x)"),
+        rw!("e^x=exp(x)"; "(pow e ?x)" => "(exp ?x)"),
         /* ========================================================================== */
 
         /* =============================== logarithm ================================ */
-        /* ++++++++++++++++++++ ln ++++++++++++++++++++ */
-        rw!("ln(e)=1"; "(ln e)" => "1"),
-        rw!("ln(ab)=ln(a)+ln(b)"; "(ln (* ?a ?b))" => "(+ (ln ?a) (ln ?b))"),
-        rw!("ln(a)+ln(b)=ln(ab)"; "(+ (ln ?a) (ln ?b))" => "(ln (* ?a ?b))"),
-        rw!("ln(a/b)=ln(a)-ln(b)"; "(ln (/ ?a ?b))" => "(- (ln ?a) (ln ?b))" if not_zero("?b")),
-        rw!("ln(a)-ln(b)=ln(a/b)"; "(- (ln ?a) (ln ?b))" => "(ln (/ ?a ?b))" if not_zero("?b")),
-        rw!("ln(x^a)=aln(x)"; "(ln (pow ?x ?a))" => "(* ?a (ln ?x))" if is_const("?a")),
-        rw!("aln(x)=ln(x^a)"; "(* ?a (ln ?x))" => "(ln (pow ?x ?a))" if is_const("?a")),
-        /* +++++++++++++++++++ log ++++++++++++++++++++ */
-        rw!("log(b)=1"; "(log ?b ?b)" => "1" if not_zero("?b")),
-        rw!("log(xy)=log(x)+log(y)";
-            "(log ?b (* ?x ?y))" => "(+ (log ?b ?x) (log ?b ?y))" if not_zero("?b")),
-        rw!("log(x)+log(y)=log(xy)";
-            "(+ (log ?b ?x) (log ?b ?y))" => "(log ?b (* ?x ?y))" if not_zero("?b")),
-        rw!("log(x/y)=log(x)-log(y)";
-            "(log ?b (/ ?x ?y))" => "(- (log ?b ?x) (log ?b ?y))" if not_zero("?b") if not_zero("?y")),
-        rw!("log(x)-log(y)=log(x/y)";
-            "(- (log ?b ?x) (log ?b ?y))" => "(log ?b (/ ?x ?y))" if not_zero("?b") if not_zero("?y")),
-        rw!("log(x^a)=alog(x)";
-            "(log ?b (pow ?x ?a))" => "(* ?a (log ?b ?x))" if not_zero("?b") if is_const("?a")),
-        rw!("alog(x)=log(x^a)";
-            "(* ?a (log ?b ?x))" => "(log ?b (pow ?x ?a))" if not_zero("?b") if is_const("?a")),
+        /* natural logarithm (base e) */
+        rw!("log(e)=1"; "(log e)" => "1"),
+        rw!("log(ab)=log(a)+log(b)"; "(log (* ?a ?b))" => "(+ (log ?a) (log ?b))"),
+        rw!("log(a)+log(b)=log(ab)"; "(+ (log ?a) (log ?b))" => "(log (* ?a ?b))"),
+        rw!("log(a/b)=log(a)-log(b)"; "(log (/ ?a ?b))" => "(- (log ?a) (log ?b))" if not_zero("?b")),
+        rw!("log(a)-log(b)=log(a/b)"; "(- (log ?a) (log ?b))" => "(log (/ ?a ?b))" if not_zero("?b")),
+        rw!("log(x^a)=alog(x)"; "(log (pow ?x ?a))" => "(* ?a (log ?x))" if is_const("?a")),
+        rw!("alog(x)=log(x^a)"; "(* ?a (log ?x))" => "(log (pow ?x ?a))" if is_const("?a")),
+
+        /* extended log rules */
+        rw!("log(1)=0"; "(log 1)" => "0"),
+        rw!("0=log(1)"; "0" => "(log 1)"),
+        rw!("log(sqrt(x))=log(x)/2"; "(log (sqrt ?x))" => "(/ (log ?x) 2)" if not_zero("?x")),
+        rw!("log(x)/2=log(sqrt(x))"; "(/ (log ?x) 2)" => "(log (sqrt ?x))" if not_zero("?x")),
+        rw!("log(1/x)=-log(x)"; "(log (/ 1 ?x))" => "(* -1 (log ?x))" if not_zero("?x")),
+        rw!("-log(x)=log(1/x)"; "(* -1 (log ?x))" => "(log (/ 1 ?x))" if not_zero("?x")),
+
+        /* log-exp inverses */
+        rw!("log(e^x)=x"; "(log (exp ?x))" => "?x"),
+        rw!("log(e^x)=x"; "(log (pow e ?x))" => "?x"),
+        rw!("e^log(x)=x"; "(exp (log ?x))" => "?x" if not_zero("?x")),
+        rw!("e^log(x)=x"; "(pow e (log ?x))" => "?x" if not_zero("?x")),
+        /* ========================================================================== */
+
+        /* ======================= partial fraction decomposition =================== */
+        /* 1/(x^2-a^2) = 1/(2a) * (1/(x-a) - 1/(x+a)) */
+        rw!("1/(x^2-a^2)->partial"; "(/ 1 (- (pow ?x 2) (pow ?a 2)))" =>
+            "(* (/ 1 (* 2 ?a)) (- (/ 1 (- ?x ?a)) (/ 1 (+ ?x ?a))))"
+            if not_zero("?a")),
+        rw!("partial->1/(x^2-a^2)";
+            "(* (/ 1 (* 2 ?a)) (- (/ 1 (- ?x ?a)) (/ 1 (+ ?x ?a))))" =>
+            "(/ 1 (- (pow ?x 2) (pow ?a 2)))"
+            if not_zero("?a")),
+
+        /* 1/(a^2-x^2) = 1/(2a) * (1/(a-x) + 1/(a+x)) */
+        rw!("1/(a^2-x^2)->partial"; "(/ 1 (- (pow ?a 2) (pow ?x 2)))" =>
+            "(* (/ 1 (* 2 ?a)) (+ (/ 1 (- ?a ?x)) (/ 1 (+ ?a ?x))))"
+            if not_zero("?a")),
+        rw!("partial->1/(a^2-x^2)";
+            "(* (/ 1 (* 2 ?a)) (+ (/ 1 (- ?a ?x)) (/ 1 (+ ?a ?x))))" =>
+            "(/ 1 (- (pow ?a 2) (pow ?x 2)))"
+            if not_zero("?a")),
+
+        /* x/(x^2+a^2) = (1/2)*log(x^2+a^2) derivative form */
+        rw!("x/(x^2+a^2)=d/dx[log(x^2+a^2)]/2";
+            "(/ ?x (+ (pow ?x 2) (pow ?a 2)))" =>
+            "(* (/ 1 2) (/ (* 2 ?x) (+ (pow ?x 2) (pow ?a 2))))"),
+
+        /* 1/(x^2+a^2) = (1/a)*arctan(x/a) derivative form */
+        rw!("1/(x^2+a^2)=1/a^2*1/(1+(x/a)^2)";
+            "(/ 1 (+ (pow ?x 2) (pow ?a 2)))" =>
+            "(* (/ 1 (pow ?a 2)) (/ 1 (+ 1 (pow (/ ?x ?a) 2))))"
+            if not_zero("?a")),
         /* ========================================================================== */
 
         /* ================================= trig =================================== */
@@ -1060,18 +1112,18 @@ pub fn math_rule() -> Vec<Rewrite> {
 
         /* ============================ inv hyperbolic ============================== */
         /* ++++++++++++++ basic identity ++++++++++++++ */
-        rw!("asinh(x)=ln(x+sqrt(x^2+1))"; "(asinh ?x)" => "(ln (+ ?x (sqrt (+ (pow ?x 2) 1))))"),
-        rw!("ln(x+sqrt(x^2+1))=asinh(x)"; "(ln (+ ?x (sqrt (+ (pow ?x 2) 1))))" => "(asinh ?x)"),
-        rw!("acosh(x)=ln(x+sqrt(x^2-1))"; "(acosh ?x)" => "(ln (+ ?x (sqrt (- (pow ?x 2) 1))))"),
-        rw!("ln(x+sqrt(x^2-1))=acosh(x)"; "(ln (+ ?x (sqrt (- (pow ?x 2) 1))))" => "(acosh ?x)"),
-        rw!("atanh(x)=((1/2)ln((1+x)/(1-x)))";
-            "(atanh ?x)" => "(* (/ 1 2) (ln (/ (+ 1 ?x) (- 1 ?x))))"),
-        rw!("acsch(x)=ln(1/x+sqrt(1/x^2+1))";
-            "(acsch ?x)" => "(ln (+ (/ 1 ?x) (sqrt (+ (/ 1 (pow ?x 2)) 1))))"),
-        rw!("asech(x)=ln(1/x+sqrt(1/x^2-1))";
-            "(asech ?x)" => "(ln (+ (/ 1 ?x) (sqrt (- (/ 1 (pow ?x 2)) 1))))"),
-        rw!("acoth(x)=(1/2)ln((x+1)/(x-1))";
-            "(acoth ?x)" => "(* (/ 1 2) (ln (/ (+ ?x 1) (- ?x 1))))"),
+        rw!("asinh(x)=log(x+sqrt(x^2+1))"; "(asinh ?x)" => "(log (+ ?x (sqrt (+ (pow ?x 2) 1))))"),
+        rw!("log(x+sqrt(x^2+1))=asinh(x)"; "(log (+ ?x (sqrt (+ (pow ?x 2) 1))))" => "(asinh ?x)"),
+        rw!("acosh(x)=log(x+sqrt(x^2-1))"; "(acosh ?x)" => "(log (+ ?x (sqrt (- (pow ?x 2) 1))))"),
+        rw!("log(x+sqrt(x^2-1))=acosh(x)"; "(log (+ ?x (sqrt (- (pow ?x 2) 1))))" => "(acosh ?x)"),
+        rw!("atanh(x)=((1/2)log((1+x)/(1-x)))";
+            "(atanh ?x)" => "(* (/ 1 2) (log (/ (+ 1 ?x) (- 1 ?x))))"),
+        rw!("acsch(x)=log(1/x+sqrt(1/x^2+1))";
+            "(acsch ?x)" => "(log (+ (/ 1 ?x) (sqrt (+ (/ 1 (pow ?x 2)) 1))))"),
+        rw!("asech(x)=log(1/x+sqrt(1/x^2-1))";
+            "(asech ?x)" => "(log (+ (/ 1 ?x) (sqrt (- (/ 1 (pow ?x 2)) 1))))"),
+        rw!("acoth(x)=(1/2)log((x+1)/(x-1))";
+            "(acoth ?x)" => "(* (/ 1 2) (log (/ (+ ?x 1) (- ?x 1))))"),
         /* ++++++++++++ hyper of inv hyper ++++++++++++ */
         // domain x>0 (2 below)
         rw!("sinh(acosh)=sqrt(x^2-1)"; "(sinh (acosh ?x))" => "(sqrt (- (pow ?x 2) 1))"),
@@ -1100,45 +1152,45 @@ pub fn math_rule() -> Vec<Rewrite> {
         rw!("atanh(x)=acoth(1/x)"; "(atanh ?x)" => "(acoth (/ 1 ?x))" if not_zero("?x")),
         rw!("acoth(x)=atanh(1/x)"; "(acoth ?x)" => "(atanh (/ 1 ?x))" if not_zero("?x")),
         /* +++++++++++++ other identities +++++++++++++ */
-        rw!("abs(ln(x))=acosh((x^2+1)/(2x))";
-            "(abs (ln ?x))" => "(acosh (/ (+ (pow ?x 2) 1) (* 2 ?x)))"),
-        rw!("acosh((x^2+1)/(2x))=abs(ln(x))";
-            "(acosh (/ (+ (pow ?x 2) 1) (* 2 ?x)))" => "(abs (ln ?x))"),
+        rw!("abs(log(x))=acosh((x^2+1)/(2x))";
+            "(abs (log ?x))" => "(acosh (/ (+ (pow ?x 2) 1) (* 2 ?x)))"),
+        rw!("acosh((x^2+1)/(2x))=abs(log(x))";
+            "(acosh (/ (+ (pow ?x 2) 1) (* 2 ?x)))" => "(abs (log ?x))"),
         // domain x>0
-        rw!("ln(x)=asinh((x^2-1)/(2x))"; "(ln ?x)" => "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))"),
-        rw!("asinh((x^2-1)/(2x))=ln(x)"; "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))" => "(ln ?x)"),
+        rw!("log(x)=asinh((x^2-1)/(2x))"; "(log ?x)" => "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))"),
+        rw!("asinh((x^2-1)/(2x))=log(x)"; "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))" => "(log ?x)"),
         // domain x>0
-        rw!("ln(x)=atanh((x^2-1)/(x^2+1))";
-            "(ln ?x)" => "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))"),
-        rw!("atanh((x^2-1)/(x^2+1))=ln(x)";
-            "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))" => "(ln ?x)"),
+        rw!("log(x)=atanh((x^2-1)/(x^2+1))";
+            "(log ?x)" => "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))"),
+        rw!("atanh((x^2-1)/(x^2+1))=log(x)";
+            "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))" => "(log ?x)"),
         /* ++++++ inv hyper & circular functions ++++++ */
-        rw!("ln(|tan(x)|)=-atanh(cos(2x))";
-            "(ln (abs (tan ?x)))" => "(* -1 (atanh (cos (* 2 ?x))))"),
-        rw!("-atanh(cos(x))=ln(|tan(x/2)|)";
-            "(* -1 (atanh (cos (* 2 ?x))))" => "(ln (abs (tan (/ ?x 2))))"),
+        rw!("log(|tan(x)|)=-atanh(cos(2x))";
+            "(log (abs (tan ?x)))" => "(* -1 (atanh (cos (* 2 ?x))))"),
+        rw!("-atanh(cos(x))=log(|tan(x/2)|)";
+            "(* -1 (atanh (cos (* 2 ?x))))" => "(log (abs (tan (/ ?x 2))))"),
         // domain piecewise equiv (cause problem of asinh and atanh)
         // rw!("asinh(tan)=atanh(sin)"; "(asinh (tan ?x))" => "(atanh (sin ?x))"),
         // rw!("atanh(sin)=asinh(tan)"; "(atanh (sin ?x))" => "(asinh (tan ?x))"),
         // domain piecewise equiv
-        rw!("asinh(tan)=ln((1+sin)/(cos))";
-            "(asinh (tan ?x))" => "(ln (/ (+ 1 (sin ?x)) (cos ?x)))"),
-        rw!("ln((1+sin)/(cos))=asinh(tan)";
-            "(ln (/ (+ 1 (sin ?x)) (cos ?x)))" => "(asinh (tan ?x))"),
+        rw!("asinh(tan)=log((1+sin)/(cos))";
+            "(asinh (tan ?x))" => "(log (/ (+ 1 (sin ?x)) (cos ?x)))"),
+        rw!("log((1+sin)/(cos))=asinh(tan)";
+            "(log (/ (+ 1 (sin ?x)) (cos ?x)))" => "(asinh (tan ?x))"),
         // domain piecewise equiv
         rw!("|asinh(tan(x))|=acosh(1/cos)"; "(abs (asinh (tan ?x)))" => "(acosh (/ 1 (cos ?x)))"),
         rw!("acosh(1/cos)=|asinh(tan(x))|"; "(acosh (/ 1 (cos ?x)))" => "(abs (asinh (tan ?x)))"),
         /* +++++++++++++++ conversions ++++++++++++++++ */
         /* ----------------------------- */
         // domain x>=0 or x>=1 (all below)
-        rw!("ln(x)=atanh((x^-1)/(x^2+1))";
-            "(ln ?x)" => "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))"),
-        rw!("atanh((x^-1)/(x^2+1))=ln";
-            "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))" => "(ln ?x)"),
-        rw!("ln(x)=asinh((x^-1)/2x)"; "(ln ?x)" => "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))"),
-        rw!("asinh((x^-1)/2x)=ln(x)"; "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))" => "(ln ?x)"),
-        rw!("ln(x)=acosh((x^+1)/2x)"; "(ln ?x)" => "(asinh (/ (+ (pow ?x 2) 1) (* 2 ?x)))"),
-        rw!("acosh((x^+1)/2x)=ln(x)"; "(asinh (/ (+ (pow ?x 2) 1) (* 2 ?x)))" => "(ln ?x)"),
+        rw!("log(x)=atanh((x^-1)/(x^2+1))";
+            "(log ?x)" => "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))"),
+        rw!("atanh((x^-1)/(x^2+1))=log";
+            "(atanh (/ (- (pow ?x 2) 1) (+ (pow ?x 2) 1)))" => "(log ?x)"),
+        rw!("log(x)=asinh((x^-1)/2x)"; "(log ?x)" => "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))"),
+        rw!("asinh((x^-1)/2x)=log(x)"; "(asinh (/ (- (pow ?x 2) 1) (* 2 ?x)))" => "(log ?x)"),
+        rw!("log(x)=acosh((x^+1)/2x)"; "(log ?x)" => "(asinh (/ (+ (pow ?x 2) 1) (* 2 ?x)))"),
+        rw!("acosh((x^+1)/2x)=log(x)"; "(asinh (/ (+ (pow ?x 2) 1) (* 2 ?x)))" => "(log ?x)"),
         /* ----------------------------- */
         rw!("atanh(x)=asinh(x/sqrt(1-x^2))";
             "(atanh ?x)" => "(asinh (/ ?x (sqrt (- 1 (pow ?x 2)))))"),
@@ -1180,94 +1232,48 @@ pub fn math_rule() -> Vec<Rewrite> {
             "(abs (atanh (/ (sqrt (- (pow ?x 2) 1)) ?x)))" => "(asinh (sqrt (- (pow ?x 2) 1)))"),
         /* ========================================================================== */
 
-        /* =============================== derivative =============================== */
-        /* +++++++++++++ basic derivative +++++++++++++ */
-        rw!("d/dx c";
-            "(d ?x ?c)" => "0" if sym("?x") if const_or_dist_var("?x", "?c") if is_const("?c")),
-        rw!("d/dx y"; "(d x y)" => "0"),
-        rw!("d/dx z"; "(d x z)" => "0"),
-        rw!("d/dy x"; "(d y x)" => "0"),
-        rw!("d/dy z"; "(d y z)" => "0"),
-        rw!("d/dz x"; "(d z x)" => "0"),
-        rw!("d/dz y"; "(d z y)" => "0"),
-        rw!("d/dx f(x)*g(x)"; "(d ?x (* ?f ?g))" => "(+ (* (d x ?f) ?g) (* ?f (d x ?g)))"
-            if sym("?x")),
-        /* ++++++++++ distributive property +++++++++++ */
-        rw!("d/dx cf(x)"; "(d ?x (* ?c ?f))" => "(* ?c (d ?x ?f))" if sym("?x") if is_const("?c")),
-        rw!("d/dx (a/b)f(x)";
-            "(d ?x (* (/ ?a ?b) ?f))" => "(* (/ ?a ?b) (d ?x ?f))" if sym("?x") if is_const("?a")
-            if is_const("?b") if not_zero("?b")),
-        rw!("d/dx f(x)+g(x)"; "(d ?x (+ ?f ?g))" => "(+ (d ?x ?f) (d ?x ?g))" if sym("?x")),
-        rw!("d/dx f(x)-g(x)"; "(d ?x (- ?f ?g))" => "(- (d ?x ?f) (d ?x ?g))" if sym("?x")),
-        /* +++++++++++++ poly chain rule ++++++++++++++ */
-        rw!("d/dx f(x)^c"; "(d ?x (pow ?f ?c))" => "(* (* ?c (pow ?f (- ?c 1))) (d ?x ?f))"
-            if sym("?x") if is_const("?c")),
-        /* polynomial */
-        rw!("d/dx ?x^c"; "(d ?x (pow ?x ?c))" => "(* ?c (pow ?x (- ?c 1)))" if sym("?x")
-            if is_const("?c")),
-        /* +++++++++++++ trig chain rule ++++++++++++++ */
-        rw!("d/dx sin(u)"; "(d ?x (sin ?u))" => "(* (cos ?u) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx cos(u)"; "(d ?x (cos ?u))" => "(* (* -1 (sin ?u)) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx tan(u)"; "(d ?x (tan ?u))" => "(* (pow (sec ?u) 2) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx csc(u)"; "(d ?x (csc ?u))" => "(* (* -1 (* (csc ?u) (cot ?u))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx sec(u)"; "(d ?x (sec ?u))" => "(* (* (sec ?u) (tan ?u)) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx cot(u)"; "(d ?x (cot ?u))" => "(* (* -1 (pow (csc ?x) 2)) (d ?x ?u))"
-            if sym("?x")),
-        /* +++++++++++ inv trig chain rule ++++++++++++ */
-        rw!("d/dx asin(u)"; "(d ?x (asin ?u))" => "(* (/ 1 (sqrt (- 1 (pow ?u 2)))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx acos(u)"; "(d ?x (acos ?u))" => "(* (/ -1 (sqrt (- 1 (pow ?u 2)))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx atan(u)"; "(d ?x (atan ?u))" => "(* (/ 1 (+ 1 (pow ?u 2))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx acsc(u)";
-            "(d ?x (acsc ?u))" => "(* (/ -1 (* (abs ?u) (sqrt (- (pow ?u 2) 1)))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx asec(u)";
-            "(d ?x (asec ?u))" => "(* (/ 1 (* (abs ?u) (sqrt (- (pow ?u 2) 1)))) (d ?x ?u))"
-                if sym("?x")),
-        rw!("d/dx acot(u)"; "(d ?x (acot ?u))" => "(* (/ -1 (+ 1 (pow ?u 2))) (d ?x ?u))"
-            if sym("?x")),
-        /* ++++++++++ hyperbolic chain rule +++++++++++ */
-        rw!("d/dx sinh(u)"; "(d ?x (sinh ?u))" => "(* (cosh ?u) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx cosh(u)"; "(d ?x (cosh ?u))" => "(* (sinh ?u) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx tanh(u)"; "(d ?x (tanh ?u))" => "(* (pow (sech ?u) 2) (d ?x ?u))" if sym("?x")),
-        rw!("d/dx csch(u)"; "(d ?x (csch ?u))" => "(* (* -1 (* (csch ?u) (coth ?u))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx sech(u)"; "(d ?x (sech ?u))" => "(* (* -1 (* (sech ?u) (tanh ?u))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx coth(u)"; "(d ?x (coth ?u))" => "(* (* -1 (pow (csch ?u) 2)) (d ?x ?u))"
-            if sym("?x")),
-        /* ++++++++ inv hyperbolic chain rule +++++++++ */
-        rw!("d/dx asinh(u)"; "(d ?x (asinh ?u))" => "(* (/ 1 (sqrt (+ (pow ?u 2) 1))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx acosh(u)"; "(d ?x (acosh ?u))" => "(* (/ 1 (sqrt (- (pow ?u 2) 1))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx atanh(u)"; "(d ?x (atanh ?u))" => "(* (/ 1 (- 1 (pow ?u 2))) (d ?x ?u))"
-            if sym("?x")),
-        rw!("d/dx acsch(u)";
-            "(d ?x (acsch ?u))" => "(* (/ -1 (* (abs ?u) (sqrt (+ 1 (pow ?u 2))))) (d ?x ?u))"
-            if sym("?x") if not_zero("?u")),
-        rw!("d/dx asech(u)";
-            "(d ?x (asech ?u))" => "(* (/ -1 (* ?u (sqrt (- 1 (pow ?u 2))))) (d ?x ?u))"
-            if sym("?x") if not_zero("?u")),
-        rw!("d/dx acoth(u)"; "(d ?x (acoth ?u))" => "(* (/ 1 (- 1 (pow ?u 2))) (d ?x ?u))"
-            if sym("?x")),
-        /* ++++++++++ exponential chain rule ++++++++++ */
-        rw!("d/dx e^u"; "(d ?x (pow e ?u))" => "(* (pow e ?u) (d ?x ?u))" if sym("?x")),
-        /* ++++++++++++++ ln chain rule +++++++++++++++ */
-        rw!("d/dx ln(u)"; "(d ?x (ln ?u))" => "(* (/ 1 ?u) (d ?x ?u))" if sym("?x")),
-        /* ++++++++++++++ log chain rule ++++++++++++++ */
-        rw!("d/dx log"; "(d ?x (log ?b ?u))" => "(* (/ 1 (* ?u (ln ?b))) (d ?x ?u))" if sym("?x")
-            if not_zero("?b")),
+        /* ============================ polylogarithm =============================== */
+        /* special cases */
+        rw!("Li(1,x)=-log(1-x)"; "(Li 1 ?x)" => "(* -1 (log (- 1 ?x)))"),
+        rw!("-log(1-x)=Li(1,x)"; "(* -1 (log (- 1 ?x)))" => "(Li 1 ?x)"),
+        /* special values */
+        rw!("Li(2,0)=0"; "(Li 2 0)" => "0"),
+        rw!("0=Li(2,0)"; "0" => "(Li 2 0)"),
+        rw!("Li(3,0)=0"; "(Li 3 0)" => "0"),
+        rw!("0=Li(3,0)"; "0" => "(Li 3 0)"),
+        rw!("Li(2,1)=pi^2/6"; "(Li 2 1)" => "(/ (pow pi 2) 6)"),
+        rw!("pi^2/6=Li(2,1)"; "(/ (pow pi 2) 6)" => "(Li 2 1)"),
+        rw!("Li(3,1)=zeta(3)"; "(Li 3 1)" => "(zeta 3)"),
+        rw!("zeta(3)=Li(3,1)"; "(zeta 3)" => "(Li 3 1)"),
+        rw!("Li(4,1)=pi^4/90"; "(Li 4 1)" => "(/ (pow pi 4) 90)"),
+        rw!("pi^4/90=Li(4,1)"; "(/ (pow pi 4) 90)" => "(Li 4 1)"),
+        rw!("Li(2,-1)=-pi^2/12"; "(Li 2 -1)" => "(/ (* -1 (pow pi 2)) 12)"),
+        rw!("-pi^2/12=Li(2,-1)"; "(/ (* -1 (pow pi 2)) 12)" => "(Li 2 -1)"),
+        rw!("Li(2,1/2)=pi^2/12-log(2)^2/2"; "(Li 2 (/ 1 2))" =>
+            "(- (/ (pow pi 2) 12) (* (/ 1 2) (pow (log 2) 2)))"),
+        rw!("pi^2/12-log(2)^2/2=Li(2,1/2)";
+            "(- (/ (pow pi 2) 12) (* (/ 1 2) (pow (log 2) 2)))" => "(Li 2 (/ 1 2))"),
+        rw!("Li(3,1/2)=log(2)^3/6-pi^2*log(2)/12+7*zeta(3)/8"; "(Li 3 (/ 1 2))" =>
+            "(+ (- (/ (pow (log 2) 3) 6) (* (/ (pow pi 2) 12) (log 2))) (* (/ 7 8) (zeta 3)))"),
+        /* duplication formula */
+        rw!("Li(2,x^2)=2Li(2,x)+2Li(2,-x)";
+            "(Li 2 (pow ?x 2))" => "(* 2 (+ (Li 2 ?x) (Li 2 (* -1 ?x))))"),
+        rw!("2Li(2,x)+2Li(2,-x)=Li(2,x^2)";
+            "(* 2 (+ (Li 2 ?x) (Li 2 (* -1 ?x))))" => "(Li 2 (pow ?x 2))"),
         /* ========================================================================== */
 
-        // /* ============================== integration =============================== */
-        // // rw!("i-one"; "(i 1 ?x)" => "?x"),
-        // // rw!("i-power-const"; "(i (pow ?x ?c) ?x)" => "(/ (pow ?x (+ ?c 1)) (+ ?c 1))"
-        // //     if is_const("?c")),
-        // /* ========================================================================== */
+        /* ========================== riemann zeta function ========================= */
+        /* special values */
+        rw!("zeta(0)=-1/2"; "(zeta 0)" => "(/ -1 2)"),
+        rw!("-1/2=zeta(0)"; "(/ -1 2)" => "(zeta 0)"),
+        rw!("zeta(2)=pi^2/6"; "(zeta 2)" => "(/ (pow pi 2) 6)"),
+        rw!("pi^2/6=zeta(2)"; "(/ (pow pi 2) 6)" => "(zeta 2)"),
+        rw!("zeta(4)=pi^4/90"; "(zeta 4)" => "(/ (pow pi 4) 90)"),
+        rw!("pi^4/90=zeta(4)"; "(/ (pow pi 4) 90)" => "(zeta 4)"),
+        rw!("zeta(6)=pi^6/945"; "(zeta 6)" => "(/ (pow pi 6) 945)"),
+        rw!("pi^6/945=zeta(6)"; "(/ (pow pi 6) 945)" => "(zeta 6)"),
+        /* ========================================================================== */
+
+
     ]
 }

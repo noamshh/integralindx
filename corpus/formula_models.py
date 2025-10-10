@@ -1,7 +1,6 @@
 import json, hashlib
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List, Dict, Any, Set
-from pathlib import Path
 import unicodedata
 
 from src.utils.provenance import now_iso, sha256_hex
@@ -212,17 +211,6 @@ class IntegrandGroup(BaseFormula):
             'created_at': self.created_at
         }
 
-def append_jsonl(path: str, item) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(item.to_json() + "\n")
-
-
-def write_jsonl(path: str, items: List) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        for item in items:
-            f.write(item.to_json() + "\n")
 
 def _canonicalize_for_hash(s: str) -> str:
     if s is None:

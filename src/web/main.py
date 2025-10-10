@@ -3,7 +3,6 @@ import os
 import logging
 import argparse
 import traceback
-import yaml
 import uvicorn
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -31,13 +30,7 @@ async def lifespan(app: FastAPI):
         dev_mode = os.environ.get('INTEGRALINDX_DEV_MODE', 'false').lower() == 'true'
         paths = get_paths()
 
-        db_config_path = Path(paths['config']['root']) / 'database.yaml'
-        with open(db_config_path) as f:
-            db_config = yaml.safe_load(f)
-
-        db_path = Path(db_config['database_path'])
-        if not db_path.is_absolute():
-            db_path = Path(paths['project_root']) / db_path
+        db_path = Path(paths['data']['integral_db'])
 
         if not db_path.exists():
             logger.error(f"database not found: {db_path}")

@@ -3,7 +3,6 @@ project_root: "."
 config:
   root: "config"
   api_keys: "config/api_keys.yaml"
-  database: "config/database.yaml"
 
 data:
   root: "data"

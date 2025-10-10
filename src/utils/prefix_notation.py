@@ -1,3 +1,4 @@
+#  based on hongbozheng/transformer/convert.py
 import sympy as sp
 from sympy import Expr, Number, Symbol, Integer, Rational, Float, Add, Mul, Pow
 from typing import List
@@ -5,58 +6,51 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# frozen global vocabulary reference: src/models/egen/vocab.py::SYMPY_TO_PREFIX
-# this mapping is used to convert SymPy expressions to prefix notation
 SYMPY_TO_PREFIX = {
     sp.Add: "add",
     sp.Mul: "mul",
     sp.Pow: "pow",
     sp.exp: "exp",
-    sp.log: "ln",
+    sp.log: "log",
     sp.Abs: "abs",
-    sp.sign: "sign",
-    # Trigonometric
+    # trigonometric
     sp.sin: "sin",
     sp.cos: "cos",
     sp.tan: "tan",
     sp.cot: "cot",
     sp.sec: "sec",
     sp.csc: "csc",
-    # Inverse Trig
+    # inverse trig
     sp.asin: "asin",
     sp.acos: "acos",
     sp.atan: "atan",
     sp.acot: "acot",
     sp.asec: "asec",
     sp.acsc: "acsc",
-    # Hyperbolic
+    # hyperbolic
     sp.sinh: "sinh",
     sp.cosh: "cosh",
     sp.tanh: "tanh",
     sp.coth: "coth",
     sp.sech: "sech",
     sp.csch: "csch",
-    # Inverse Hyperbolic
+    # inverse hyperbolic
     sp.asinh: "asinh",
     sp.acosh: "acosh",
     sp.atanh: "atanh",
     sp.acoth: "acoth",
     sp.asech: "asech",
     sp.acsch: "acsch",
-    # Special functions (IntegralIndx extensions)
+    # special functions (IntegralIndx extensions)
     sp.polylog: "Li",
     sp.zeta: "zeta",
-    sp.re: "re",
-    sp.im: "im",
 }
 
 def _handle_number(num: Number) -> List[str]:
-    """
-    Args:
+    """Args:
         num: SymPy Number object
     Returns:
-        List of prefix tokens
-    """
+        List of prefix tokens"""
     if isinstance(num, Integer):
         val = int(num)
         if 0 <= val <= 9:
@@ -71,7 +65,6 @@ def _handle_number(num: Number) -> List[str]:
             return ["INT-"] + digits
 
     elif isinstance(num, Rational):
-        # Rational number: div numerator denominator
         numer_tokens = _handle_number(num.p)
         denom_tokens = _handle_number(num.q)
         return ["div"] + numer_tokens + denom_tokens
@@ -95,13 +88,10 @@ def sympy_to_prefix(expr: Expr) -> str:
 
 
 def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
-    # Symbol (variable)
     if isinstance(expr, Symbol):
         return [str(expr)]
-    # Number (constant)
     if isinstance(expr, Number):
         return _handle_number(expr)
-    # special constants
     if expr == sp.pi:
         return ["pi"]
     if expr == sp.E:
@@ -145,7 +135,6 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
                 for arg in reversed(args[:-1]):
                     result = [op_name] + _sympy_to_prefix_tokens(arg) + result
                 return result
-
         elif expr_type == Pow:
             base, exp = expr.args
             if exp == 2:
@@ -162,19 +151,16 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
                 return ["inv"] + _sympy_to_prefix_tokens(base)
             else:
                 return [op_name] + _sympy_to_prefix_tokens(base) + _sympy_to_prefix_tokens(exp)
-
         elif expr_type == sp.polylog:
             # polylog(order, arg) → Li order arg
             order, arg = expr.args
             return [op_name] + _sympy_to_prefix_tokens(order) + _sympy_to_prefix_tokens(arg)
-
         else:
             # generic unary/n-ary function
             tokens = [op_name]
             for arg in expr.args:
                 tokens.extend(_sympy_to_prefix_tokens(arg))
             return tokens
-
     # check for function by func attribute
     if hasattr(expr, 'func'):
         func = expr.func
@@ -185,7 +171,6 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
             for arg in expr.args:
                 tokens.extend(_sympy_to_prefix_tokens(arg))
             return tokens
-
     # fallback: unknown expression type
     # this should not happen if vocabulary is complete
     logger.warning(f"Unknown SymPy expression type: {type(expr)} for {expr}")
@@ -193,15 +178,6 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
 
 
 def _write_infix(token: str, args: List[str]) -> str:
-    """
-    convert prefix token and args to infix notation
-    based on reference/hongbozheng-transformer/convert.py::write_infix
-    Args:
-        token: operator or function name
-        args: list of argument strings (already converted to infix)
-    Returns:
-        infix notation string
-    """
     if token == 'add':
         return f'({args[0]})+({args[1]})'
     elif token == 'sub':
@@ -226,95 +202,57 @@ def _write_infix(token: str, args: List[str]) -> str:
         return f'sqrt({args[0]})'
     elif token == 'abs':
         return f'Abs({args[0]})'
-    elif token == 'sign':
-        return f'sign({args[0]})'
-    elif token in ['exp', 'ln', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
+    elif token in ['exp', 'log', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc',
                    'sinh', 'cosh', 'tanh', 'coth', 'sech', 'csch',
                    'asin', 'acos', 'atan', 'acot', 'asec', 'acsc',
                    'asinh', 'acosh', 'atanh', 'acoth', 'asech', 'acsch']:
         return f'{token}({args[0]})'
     elif token == 'Li':
-        # polylog(order, x)
         return f'polylog({args[0]}, {args[1]})'
     elif token == 'zeta':
         return f'zeta({args[0]})'
-    elif token == 're':
-        return f're({args[0]})'
-    elif token == 'im':
-        return f'im({args[0]})'
-    # handle INT+ and INT- for multi-digit integers
     elif token.startswith('INT'):
-        # this is handled in parse_int, shouldn't reach here
         return token
     else:
-        # fallback: return token as-is (variable or constant)
         return token
 
 
 def _parse_int(tokens: List[str]) -> tuple[int, int]:
-    """
-    parse multi-digit integer from token list
-    based on reference/hongbozheng-transformer/convert.py::parse_int
-    Args:
-        tokens: list starting with INT+ or INT- followed by digits
-    Returns:
-        (value, position_after_integer)
-    """
     if not tokens or tokens[0] not in ['INT+', 'INT-']:
         raise ValueError(f"expected INT+ or INT- token, got: {tokens[0] if tokens else 'empty'}")
 
     sign = 1 if tokens[0] == 'INT+' else -1
     val = 0
     i = 1
-
-    # accumulate digits
     for token in tokens[1:]:
         if token.isdigit():
             val = val * 10 + int(token)
             i += 1
         else:
             break
-
     return sign * val, i
 
 
 def _prefix_to_infix(tokens: List[str]) -> tuple[str, List[str]]:
-    """
-    recursively convert prefix notation to infix
-    based on reference/hongbozheng-transformer/convert.py::prefix_to_infix
-    Args:
-        tokens: list of tokens in prefix notation
-    Returns:
-        (infix_string, remaining_tokens)
-    """
     if not tokens:
         raise ValueError("empty token list in prefix_to_infix")
-
     op = tokens[0]
-
-    # operators with known arity
     OPERATORS = {
         # binary
         'add': 2, 'sub': 2, 'mul': 2, 'div': 2, 'pow': 2,
         # unary
         'inv': 1, 'pow2': 1, 'pow3': 1, 'pow4': 1, 'pow5': 1,
-        'sqrt': 1, 'abs': 1, 'sign': 1,
-        'exp': 1, 'ln': 1,
+        'sqrt': 1, 'abs': 1,
+        'exp': 1, 'log': 1,
         'sin': 1, 'cos': 1, 'tan': 1, 'cot': 1, 'sec': 1, 'csc': 1,
         'sinh': 1, 'cosh': 1, 'tanh': 1, 'coth': 1, 'sech': 1, 'csch': 1,
         'asin': 1, 'acos': 1, 'atan': 1, 'acot': 1, 'asec': 1, 'acsc': 1,
         'asinh': 1, 'acosh': 1, 'atanh': 1, 'acoth': 1, 'asech': 1, 'acsch': 1,
-        # special functions
-        'Li': 2,      # polylog(order, x)
+        'Li': 2,   # polylog(order, x)
         'zeta': 1,
-        're': 1,
-        'im': 1,
     }
-
-    # constants and variables
     CONSTANTS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'pi', 'e'}
     VARIABLES = {'x', 'a', 'b', 'c', 's', 't', 'u', 'v', 'w', 'y', 'z'}
-
     if op in OPERATORS:
         # operator: recursively parse arguments
         arity = OPERATORS[op]
@@ -324,16 +262,13 @@ def _prefix_to_infix(tokens: List[str]) -> tuple[str, List[str]]:
             arg_infix, remaining = _prefix_to_infix(remaining)
             args.append(arg_infix)
         return _write_infix(op, args), remaining
-
     elif op in CONSTANTS or op in VARIABLES:
         # constant or variable: return as-is
         return op, tokens[1:]
-
     elif op in ['INT+', 'INT-']:
         # multi-digit integer
         val, pos = _parse_int(tokens)
         return str(val), tokens[pos:]
-
     else:
         # unknown token: assume it's a variable or constant
         logger.warning(f"unknown token in prefix notation: {op}")
@@ -341,35 +276,12 @@ def _prefix_to_infix(tokens: List[str]) -> tuple[str, List[str]]:
 
 
 def prefix_to_sympy(prefix_str: str) -> Expr:
-    """
-    convert prefix notation to sympy expression
-    based on reference/hongbozheng-transformer/convert.py::prefix_to_sympy
-    Args:
-        prefix_str: space-separated prefix notation
-    Returns:
-        SymPy expression
-    Example:
-        >>> prefix_to_sympy("add pow2 x mul 2 x")
-        x**2 + 2*x
-        >>> prefix_to_sympy("Li 2 x")
-        polylog(2, x)
-    """
     tokens = prefix_str.strip().split()
     if not tokens:
         raise ValueError("empty prefix expression")
-
-    # convert to infix
     infix_str, remaining = _prefix_to_infix(tokens)
-
-    # check that all tokens were parsed
     if remaining:
-        raise ValueError(
-            f"incomplete parse of prefix expression: {prefix_str}\n"
-            f"remaining tokens: {remaining}"
-        )
-
-    # parse with sympy
-    # define local namespace for our variables
+        raise ValueError(f"incomplete parse of prefix expression: {prefix_str}\nremaining tokens: {remaining}")
     local_dict = {
         'x': sp.Symbol('x'),
         'a': sp.Symbol('a'),
@@ -383,12 +295,9 @@ def prefix_to_sympy(prefix_str: str) -> Expr:
         'y': sp.Symbol('y'),
         'z': sp.Symbol('z'),
     }
-
-    # wrap in parentheses for safety
     expr = sp.parsing.sympy_parser.parse_expr(
         f'({infix_str})',
         local_dict=local_dict,
         evaluate=True
     )
-
     return expr

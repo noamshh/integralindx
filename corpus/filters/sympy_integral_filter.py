@@ -52,12 +52,12 @@ class SymPyIntegralFilter:
         ]
         self.latex_rejections = [
             (re.compile(r'[KIJYfpqFPQ]_'), "subscripted special function not parsed"),
-            (re.compile(r'\b[KESHfgh]\('), "unparsed function call (K/E/S/H/f/g/h)"),
-            (re.compile(r'\b[KSHAfgh]\b'), "unknown function symbol (K/S/H/f/g/h)"),
-            (re.compile(r'\b[FGH]\('), "uppercase unknown function (F/G/H)"),
-            (re.compile(r'\bo[\(\\]'), "little o notation (asymptotic)"),
-            (re.compile(r'[a-zA-Z]\''), "derivative notation (apostrophe)"),
-            (re.compile(r'[A-Z][a-z]'), "uppercase + lowercase (unparsed parameter)"),
+            (re.compile(r'\b[KESHfgh]\('), "unparsed function call"),
+            (re.compile(r'\b[KSHAfghE]\b'), "unknown function symbol "),
+            (re.compile(r'\b[FGH]\('), "uppercase unknown function "),
+            (re.compile(r'\bo[\(\\]'), "little o notation"),
+            (re.compile(r'[a-zA-Z]\''), "derivative notation"),
+            (re.compile(r'[A-Z][a-z]'), "uppercase + lowercase"),
             (re.compile(r'[LXZTN][\+\-\*/\^\)]'), "uppercase parameter variable"),
             (re.compile(r'\([LXZTN]'), "uppercase parameter variable after paren"),
             (re.compile(r'\d+\.\d+'), "decimal number (prefer fractions)"),
@@ -98,7 +98,7 @@ class SymPyIntegralFilter:
         return bool(self.integral_pattern.search(latex))
     
     def has_integral_pattern_fast(self, formula: "NormalizedFormula") -> bool:
-        """Fast check if formula contains integral patterns before expensive processing"""
+        """Fast check if formula contains integral patterns"""
         try:
             if not formula or not getattr(formula, 'accepted', False):
                 return False

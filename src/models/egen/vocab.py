@@ -33,9 +33,8 @@ OPERATORS = {
     "pow5": 1,
     "sqrt": 1,
     "exp": 1,
-    "ln": 1,
+    "log": 1,
     "abs": 1,
-    "sign": 1,
     "sin": 1,
     "cos": 1,
     "tan": 1,
@@ -62,8 +61,6 @@ OPERATORS = {
     "acsch": 1,
     "Li": 2,     # polylog(order, arg)
     "zeta": 1,   # Riemann zeta function
-    "re": 1,     # real part
-    "im": 1,     # imaginary part
 }
 
 SYMPY_TO_PREFIX = {
@@ -71,9 +68,8 @@ SYMPY_TO_PREFIX = {
     sp.Mul: "mul",
     sp.Pow: "pow",
     sp.exp: "exp",
-    sp.log: "ln",
+    sp.log: "log",
     sp.Abs: "abs",
-    sp.sign: "sign",
     sp.sin: "sin",
     sp.cos: "cos",
     sp.tan: "tan",
@@ -100,8 +96,6 @@ SYMPY_TO_PREFIX = {
     sp.acsch: "acsch",
     sp.polylog: "Li",
     sp.zeta: "zeta",
-    sp.re: "re",
-    sp.im: "im",
 }
 
 SPECIAL_TOKENS = {
