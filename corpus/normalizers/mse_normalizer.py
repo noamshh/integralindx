@@ -13,6 +13,7 @@ from src.utils.latex_relation_detection import find_all_top_level_relations
 class MSENormalizer:
     def __init__(self):
         pass
+
     def normalize_latex(self, raw: str, source_id: str) -> List[NormalizedFormula]:
         """
         Normalize LaTeX formula(s), handling multiple statements.
@@ -66,7 +67,7 @@ class MSENormalizer:
 
 
 def _normalize_formula_with_conditions(s: str, source_id: str, conditions: Optional[str] = None, raw_latex: str = "") -> NormalizedFormula:
-    """Normalize formula keeping first expression as main and extracting equivalent forms from chains."""
+    """Normalize formula keeping first expression as main and extracting equivalent forms from chains"""
     s = TAG_PATTERN.sub('', s)
     s = SIZE_COMMAND_PATTERN.sub('', s)
     s = s.strip()

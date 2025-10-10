@@ -1,0 +1,38 @@
+# based on E-Gen paper hyperparameters
+optimizer:
+  name: "adamw"
+  lr: 1.0e-4
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+scheduler:
+  name: "cosine"
+  warmup_epochs: 5
+  min_lr: 1.0e-6
+
+criterion:
+  name: "infonce"
+  temperature: 0.1
+  reduction: "mean"
+
+training:
+  batch_size: 256
+  n_epochs: 300
+  grad_clip_norm: 1.0
+  save_every_n_iters: 1000
+  log_every_n_iters: 100
+  device: "cuda"
+  num_workers: 4
+
+checkpoints:
+  dir: "data/models/checkpoints"
+  experiment: "${model.name}_${model.version}"
+  save_best: true
+  save_last: true
+
+dataset:
+  train_tsv: "data/ml_training/${model.version}/train.tsv"
+  val_tsv: "data/ml_training/${model.version}/val.tsv"
+  test_tsv: "data/ml_training/${model.version}/test.tsv"
+  max_seq_len: 128

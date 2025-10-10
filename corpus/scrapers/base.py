@@ -32,7 +32,7 @@ class BaseScraper(ABC):
         pass
 
     def create_formula(self, raw_latex: str, latex_origin: str, provenance: dict) -> RawFormula:
-        lf = RawFormula(
+        rf = RawFormula(
             id=RawFormula.make_id(self.source_name, raw_latex),
             source=self.source_name,
             source_url="",
@@ -40,5 +40,5 @@ class BaseScraper(ABC):
             latex_origin=latex_origin,
             provenance=provenance
         )
-        lf.compute_checksum(field_name="raw_latex")
-        return lf
+        rf.compute_checksum(field_name="raw_latex")
+        return rf

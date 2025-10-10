@@ -1,0 +1,12 @@
+# ii-cl-400k: IntegralIndx Contrastive Learning 400K parameters
+name: "ii-cl-400k"
+version: "v1.0"
+encoder:
+  dim: 128
+  num_layers: 2
+  num_heads: 4
+  feedforward_dim: 512
+  dropout: 0.1
+  max_seq_len: 64
+  vocab_size: null  # set at runtime from tokenizer
+pooling: "mean"

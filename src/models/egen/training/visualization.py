@@ -4,25 +4,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 logger = logging.getLogger(__name__)
-
-try:
-    from torch.utils.tensorboard import SummaryWriter
-    TENSORBOARD_AVAILABLE = True
-except ImportError:
-    TENSORBOARD_AVAILABLE = False
-    logger.warning("tensorboard not available, install with: pip install tensorboard")
-
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib
-    matplotlib.use('Agg')
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-    logger.warning("matplotlib not available, install with: pip install matplotlib")
-
 
 class TensorBoardLogger:
     def __init__(self, log_dir: Path, experiment_name: str):
@@ -31,9 +16,6 @@ class TensorBoardLogger:
             log_dir: base directory for logs (e.g., data/models/runs/)
             experiment_name: name of experiment
         """
-        if not TENSORBOARD_AVAILABLE:
-            raise ImportError("tensorboard not available, install with: pip install tensorboard")
-
         self.log_dir = Path(log_dir) / experiment_name / 'tensorboard'
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=str(self.log_dir))
@@ -74,9 +56,6 @@ def plot_training_curves(stats_file: Path, output_dir: Path, show_lr: bool = Tru
         stats_file: path to stats.json file
         output_dir: directory to save plots
         show_lr: include learning rate subplot"""
-    if not MATPLOTLIB_AVAILABLE:
-        logger.warning("matplotlib not available, skipping plot")
-        return
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     with open(stats_file) as f:
@@ -133,9 +112,6 @@ def plot_embedding_space(embeddings: np.ndarray, labels: Optional[List[str]] = N
         method: 'tsne' or 'umap'
         perplexity: t-SNE perplexity parameter
         n_components: dimensionality (2 or 3)"""
-    if not MATPLOTLIB_AVAILABLE:
-        logger.warning("matplotlib not available, skipping plot")
-        return
     if method == 'tsne':
         try:
             from sklearn.manifold import TSNE

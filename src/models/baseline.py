@@ -5,12 +5,7 @@ import numpy as np
 from pathlib import Path
 from typing import List, Union
 from sklearn.feature_extraction.text import TfidfVectorizer
-try:
-    from sentence_transformers import SentenceTransformer
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    logging.warning("sentence-transformers not available")
+from sentence_transformers import SentenceTransformer
 
 from src.models.base_embedder import BaseEmbedder
 
@@ -18,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaselineEmbedder(BaseEmbedder):
-    """Baseline embedder supporting TF-IDF and Sentence-BERT
-    TF-IDF requires fit() before encode()"""
+    """Baseline embedder supporting tf-idf and sentence-bert. tf-idf requires fit() before encode()"""
     def __init__(self, method: str = 'tfidf', embedding_dim: int = 384):
         super().__init__(embedding_dim=embedding_dim, method=method)
         self.is_fitted = False
@@ -29,8 +23,6 @@ class BaselineEmbedder(BaseEmbedder):
                 lowercase=False, token_pattern=None
             )
         elif method == 'sentence_bert':
-            if not SENTENCE_TRANSFORMERS_AVAILABLE:
-                raise ImportError("sentence-transformers required")
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.embedding_dim = 384
             self.is_fitted = True  # pretrained, ready to use

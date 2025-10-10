@@ -132,12 +132,12 @@ class MSEScraper(BaseScraper):
                         "math_type": "display",
                         "pattern_index": i
                     }
-                    lf = self.create_formula(
+                    rf = self.create_formula(
                         raw_latex=latex_content,
                         latex_origin=f"mse_{origin}_display",
                         provenance=provenance
                     )
-                    results.append(lf)
+                    results.append(rf)
         return results
 
     def create_formula(self, raw_latex: str, latex_origin: str, provenance: dict) -> RawFormula:
@@ -149,7 +149,7 @@ class MSEScraper(BaseScraper):
             source_url = f"https://math.stackexchange.com/a/{item_id}"
         else:
             source_url = f"https://math.stackexchange.com/q/{item_id}"
-        lf = RawFormula(
+        rf = RawFormula(
             id=RawFormula.make_id(self.source_name, raw_latex),
             source=self.source_name,
             source_url=source_url,
@@ -157,5 +157,5 @@ class MSEScraper(BaseScraper):
             latex_origin=latex_origin,
             provenance=provenance
         )
-        lf.compute_checksum(field_name="raw_latex")
-        return lf
+        rf.compute_checksum(field_name="raw_latex")
+        return rf

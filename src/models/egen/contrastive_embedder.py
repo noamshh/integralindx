@@ -1,11 +1,11 @@
 import torch
 import numpy as np
-import yaml
 import json
 import logging
 from typing import List, Union, Optional
 from pathlib import Path
 import sympy as sp
+from omegaconf import OmegaConf
 
 from src.models.base_embedder import BaseEmbedder
 from src.models.egen.contrastive_model import MathEncoder
@@ -22,15 +22,14 @@ class ContrastiveLearningEmbedder(BaseEmbedder):
     def __init__(self, vocab_size: int, config_path: Optional[Path] = None, device: Optional[str] = None):
         """Args:
             vocab_size: vocabulary size (from tokenizer)
-            config_path: path to model config (default: config/model_config.yaml)
+            config_path: path to model config (default: config/model/ii-cl-19m.yaml)
             device: torch device (default: auto-detect)"""
         if config_path is None:
-            config_path = PROJECT_ROOT / 'config' / 'model_config.yaml'
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        encoder_cfg = config['model']['encoder']
-        self.embedding_dim = encoder_cfg['dim']
-        self.max_seq_len = encoder_cfg['max_seq_len']
+            config_path = PROJECT_ROOT / 'config' / 'model' / 'ii-cl-19m.yaml'
+        config = OmegaConf.load(config_path)
+        encoder_cfg = config.encoder
+        self.embedding_dim = encoder_cfg.dim
+        self.max_seq_len = encoder_cfg.max_seq_len
         self.config_path = config_path
         super().__init__(embedding_dim=self.embedding_dim, method='contrastive')
         if device is None:
@@ -39,18 +38,18 @@ class ContrastiveLearningEmbedder(BaseEmbedder):
             self.device = torch.device(device)
         self.model = MathEncoder(
             vocab_size=vocab_size,
-            dim=encoder_cfg['dim'],
-            num_layers=encoder_cfg['num_layers'],
-            num_heads=encoder_cfg['num_heads'],
-            feedforward_dim=encoder_cfg['feedforward_dim'],
-            max_seq_len=encoder_cfg['max_seq_len'],
-            dropout=encoder_cfg['dropout']
+            dim=encoder_cfg.dim,
+            num_layers=encoder_cfg.num_layers,
+            num_heads=encoder_cfg.num_heads,
+            feedforward_dim=encoder_cfg.feedforward_dim,
+            max_seq_len=encoder_cfg.max_seq_len,
+            dropout=encoder_cfg.dropout
         ).to(self.device)
 
         self.tokenizer = MathTokenizer()
         logger.info(
             f"initialized contrastive embedder: {self.embedding_dim}D, "
-            f"{encoder_cfg['num_layers']}L, {encoder_cfg['num_heads']}H, "
+            f"{encoder_cfg.num_layers}L, {encoder_cfg.num_heads}H, "
             f"device={self.device}"
         )
 

@@ -49,7 +49,6 @@ class IntegrandGroupSearch:
         logger.info(f"built FAISS index with {self.index.ntotal} vectors")
 
     def _convert_to_latex(self, canonical: str) -> str:
-        """convert canonical sympy expression to latex for display"""
         try:
             expr = sp.sympify(canonical)
             return sp.latex(expr)

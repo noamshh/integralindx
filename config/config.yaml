@@ -1,0 +1,10 @@
+defaults:
+  - model: ii-cl-19m
+  - training: gpu
+  - _self_
+
+hydra:
+  run:
+    dir: ./outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: false  # don't change working directory
