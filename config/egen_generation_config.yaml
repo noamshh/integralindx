@@ -1,0 +1,9 @@
+defaults:
+  - dataset/egen_generation: full
+  - _self_
+
+hydra:
+  run:
+    dir: ./outputs/egen_generation/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: false

@@ -34,8 +34,9 @@
                             <input type="text" class="form-control search-input" id="queryInput"
                                    placeholder="e.g., log(sin(x))" required maxlength="200">
                             <div class="form-text format-help" id="formatHelp">
-                                <strong>Allowed functions:</strong> sin, cos, tan, sinh, cosh, tanh, asin, acos, atan, asinh, acosh, atanh, exp, log, sqrt, polylog
-                                <br><strong>Examples:</strong> <code>log(sin(x))</code>,  <code>1/(1+x**2)</code>,  <code>log(2*x + 1)</code>,  <code>polylog(2, x)</code>,  <code>exp(-x)</code>
+                                <strong>Allowed functions:</strong> sin, cos, tan, cot, sec, csc, asin, acos, atan, acot, asec, acsc, sinh, cosh, tanh, coth, sech, csch, asinh, acosh, atanh, acoth, asech, acsch, exp, log, abs, sqrt, polylog, zeta
+                                <br><strong>Allowed parameters:</strong> max 3 from {a, b, c}
+                                <br><strong>Examples:</strong> <code>log(sin(x))</code>,  <code>1/(1+x**2)</code>,  <code>a*log(x)</code>,  <code>polylog(2, x)</code>,  <code>exp(-x)</code>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary search-button w-100">

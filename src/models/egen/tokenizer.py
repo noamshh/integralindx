@@ -61,7 +61,7 @@ class MathTokenizer:
             if token not in self.vocab:
                 raise ValueError(
                     f"Unknown token '{token}' in expression. "
-                    f"All tokens must be in frozen vocabulary (see vocab.py)"
+                    f"All tokens must be in vocabulary (see vocab.py)"
                 )
             token_ids.append(self.vocab[token])
         token_ids.append(self.EOE_ID)

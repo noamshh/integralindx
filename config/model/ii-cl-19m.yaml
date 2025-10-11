@@ -7,6 +7,6 @@ encoder:
   num_heads: 8
   feedforward_dim: 2048
   dropout: 0.1
-  max_seq_len: 200
+  max_seq_len: 90
   vocab_size: null  # set at runtime from tokenizer
 pooling: "mean"

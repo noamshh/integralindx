@@ -10,15 +10,12 @@ COMMON_PARAMS = {
     'a', 'b', 'c', 'r', 's', 't', 'u', 'z', 'n', 'm',
     'alpha', 'beta',
 }
-
-# these should never appear in well-parsed integrals
 SPURIOUS_SYMBOLS = {
     'dx', 'dy', 'dz', 'dt', 'du', 'dv', 'dw', 'dr', 'ds',
     'eta', 'theta', 'phi', 'psi', 'omega', 'lambda',
     'mu', 'nu', 'xi', 'rho', 'sigma', 'tau', 'chi', 'kappa',
     'epsilon',  'iota', 'omicron', 'upsilon',
 }
-
 MATH_CONSTANTS = {'pi', 'E', 'I', 'e'}
 
 def is_subscripted_variable(symbol_name: str) -> bool:
@@ -36,45 +33,71 @@ def get_function_classes(expr) -> Set[type]:
 
 def validate_parsed_symbols(sympy_integrand: str, sympy_variable: str, debug: bool = False) -> Tuple[bool, Optional[str], Optional[Set[str]]]:
     try:
-        # parse expression
         expr = sp.sympify(sympy_integrand)
-        # get all free symbols
+        # hardcoded edge case rejections
+        if sp.I in expr.atoms():
+            reason = "contains imaginary unit I (not supported)"
+            if debug:
+                logger.debug(f"Rejected: {reason}")
+            return False, reason, None
+        if sp.zoo in expr.atoms():
+            reason = "contains complex infinity zoo (not supported)"
+            if debug:
+                logger.debug(f"Rejected: {reason}")
+            return False, reason, None
+        if any(isinstance(arg, sp.Order) for arg in sp.preorder_traversal(expr)):
+            reason = "contains big-O notation (not supported)"
+            if debug:
+                logger.debug(f"Rejected: {reason}")
+            return False, reason, None
+        for arg in sp.preorder_traversal(expr):
+            if isinstance(arg, (sp.Min, sp.Max)):
+                reason = f"contains {type(arg).__name__} function (not supported)"
+                if debug:
+                    logger.debug(f"Rejected: {reason}")
+                return False, reason, None
+        function_classes = get_function_classes(expr)
+        if sp.re in function_classes or sp.im in function_classes:
+            reason = "contains re/im functions (not supported)"
+            if debug:
+                logger.debug(f"Rejected: {reason}")
+            return False, reason, None
+        for arg in sp.preorder_traversal(expr):
+            if isinstance(arg, sp.Derivative):
+                reason = "contains Derivative operator (not supported)"
+                if debug:
+                    logger.debug(f"Rejected: {reason}")
+                return False, reason, None
+
         all_symbols = {str(s) for s in expr.free_symbols}
-        # remove integration variable and math constants
         params = all_symbols - {sympy_variable} - MATH_CONSTANTS
         if debug:
             logger.debug(f"Validating symbols: all={all_symbols}, params={params}")
-        # check for spurious symbols
         spurious = params & SPURIOUS_SYMBOLS
         if spurious:
             reason = f"spurious symbols: {spurious}"
             if debug:
                 logger.debug(f"Rejected: {reason}")
             return False, reason, None
-        # check for subscripted variables
         subscripted = [p for p in params if is_subscripted_variable(p)]
         if subscripted:
             reason = f"subscripted variables: {subscripted}"
             if debug:
                 logger.debug(f"Rejected: {reason}")
             return False, reason, None
-        # check parameter count (max 3 for ML tokenization)
         if len(params) > 3:
             reason = f"too many params: {len(params)} > 3 (found: {params})"
             if debug:
                 logger.debug(f"Rejected: {reason}")
             return False, reason, None
-        # check against whitelist
         unknown = params - COMMON_PARAMS
         if unknown:
             reason = f"unknown params not in whitelist: {unknown}"
             if debug:
                 logger.debug(f"Rejected: {reason}")
             return False, reason, None
-        # validate function objects
         function_classes = get_function_classes(expr)
         if function_classes:
-            # check all functions are in vocab whitelist
             allowed_functions = set(SYMPY_TO_PREFIX.keys())
             disallowed_functions = function_classes - allowed_functions
             if disallowed_functions:
@@ -84,7 +107,7 @@ def validate_parsed_symbols(sympy_integrand: str, sympy_variable: str, debug: bo
                 if debug:
                     logger.debug(f"Rejected: {reason}")
                 return False, reason, None
-        # all checks passed
+        # all passed
         return True, None, params
     except Exception as e:
         reason = f"failed to parse for symbol validation: {e}"

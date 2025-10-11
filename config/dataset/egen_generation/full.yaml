@@ -1,0 +1,20 @@
+data:
+  frozen_seeds: "data/ml_seeds/frozen_seeds.txt"
+
+egraph:
+  binary_path: "bin/egen.exe"
+  n_equivalents: 100
+  token_limit: 12
+  time_limit: 300
+
+output:
+  equivalents_dir: "data/ml_training/equivalents"
+  metadata_file: "equivalents_metadata.json"
+
+processing:
+  batch_size: 50
+
+logging:
+  level: "INFO"
+  file: null
+  progress_interval: 10

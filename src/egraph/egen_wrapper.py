@@ -1,9 +1,12 @@
 import subprocess
 import logging
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict
+
 from src.utils.sexpression import prefix_to_sexp
+from src.models.egen.vocab import SEXP_TO_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -15,42 +18,18 @@ class EGenConfig:
     time_limit: int = 300
     optimized: bool = True
 
-def _parse_file_output(output_content: str) -> List[str]:
-    lines = output_content.strip().split('\n')
-    equivalents = []
-    SYMBOL_TO_WORD_MAP = {
-        '+': 'add',
-        '-': 'sub',
-        '*': 'mul',
-        '/': 'div',
-    }
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        tokens = line.split()
-        if tokens and tokens[0] in SYMBOL_TO_WORD_MAP:
-            tokens[0] = SYMBOL_TO_WORD_MAP[tokens[0]]
-        converted = ' '.join(tokens)
-        equivalents.append(converted)
-    return equivalents
-
 
 def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = False) -> Dict[str, List[str]]:
     """
-    Generate equivalent expressions for multiple expressions using file I/O
-
-    More efficient than single-expression mode - writes all seeds to input file,
-    runs E-Gen once, then parses output file.
+    Generate equivalent expressions for multiple expressions
     Args:
-        exprs: list of expressions in prefix notation (e.g., ["add x 1", "mul x 2"])
-        config: e-graph configuration with binary path
+        exprs: list of expressions in prefix notation
+        config: e-graph configuration
         fail_on_error: if True, raise on first error; if False, skip failed expressions
     Returns:
         dict mapping original expression to list of equivalents
         failed expressions are excluded from results (unless fail_on_error=True)
     """
-    import tempfile
 
     if not exprs:
         return {}
@@ -92,36 +71,31 @@ def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = F
             output_content = f.read()
         logger.debug(f"output file size: {len(output_content)} chars")
 
-        # parse output file - format is:
-        # original1
-        # equiv1_1
-        # equiv1_2
-        # <blank>
-        # original2
-        # equiv2_1
-        # ...
-        all_equivalents = _parse_file_output(output_content)
-        results = {}
+        lines = output_content.strip().split('\n')
+        groups = []
         current_group = []
-        for equiv in all_equivalents:
-            current_group.append(equiv)
-
-        # simple grouping: assume output is in same order as input
-        # first expr in each group is the original (in our format), rest are equivalents
-        # split by finding where we have exactly n_equiv + 1 expressions
-        if all_equivalents:
-            equiv_idx = 0
-            for expr in exprs:
-                group_equivalents = []
-                if equiv_idx < len(all_equivalents):
-                    equiv_idx += 1
-                while equiv_idx < len(all_equivalents) and len(group_equivalents) < config.n_equiv:
-                    group_equivalents.append(all_equivalents[equiv_idx])
-                    equiv_idx += 1
-                if group_equivalents:
-                    results[expr] = group_equivalents
-                else:
-                    logger.warning(f"no equivalents generated for: {expr}")
+        for line in lines:
+            line = line.strip()
+            if not line:  # blank line separates groups
+                if current_group:
+                    groups.append(current_group)
+                    current_group = []
+            else:
+                current_group.append(line)
+        if current_group:
+            groups.append(current_group)
+        results = {}
+        for i, (expr, group) in enumerate(zip(exprs, groups)):
+            if len(group) <= 1:
+                logger.warning(f"no equivalents generated for: {expr}")
+                continue
+            equiv_lines = group[1:]  # skip seed echo
+            group_equivalents = []
+            for equiv_line in equiv_lines:
+                tokens = equiv_line.split()
+                converted_tokens = [SEXP_TO_PREFIX.get(token, token) for token in tokens]
+                group_equivalents.append(' '.join(converted_tokens))
+            results[expr] = group_equivalents
         logger.info(f"batch complete: generated equivalents for {len(results)}/{len(exprs)} expressions")
         return results
 

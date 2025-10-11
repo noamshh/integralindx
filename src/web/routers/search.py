@@ -46,9 +46,10 @@ async def validate_expression(request: ValidationRequest):
 
 @router.get("/embedders")
 async def get_available_embedders():
+    embedder_list = list(available_embedders.keys())
     return {
-        "embedders": list(available_embedders.keys()),
-        "default": "tfidf"
+        "embedders": embedder_list,
+        "default": embedder_list[0] if embedder_list else "tfidf"
     }
 
 @router.post("/search", response_model=SimilarityResult)
@@ -56,7 +57,8 @@ async def search_similar_integrands(query: MathQuery):
     if search_engine is None:
         raise HTTPException(status_code=503, detail="search engine not available")
     try:
-        embedder_name = query.embedder or "tfidf"
+        default_embedder = list(available_embedders.keys())[0] if available_embedders else "tfidf"
+        embedder_name = query.embedder or default_embedder
         if embedder_name not in available_embedders:
             return SimilarityResult(
                 query=query.query,

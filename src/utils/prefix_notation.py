@@ -4,53 +4,11 @@ from sympy import Expr, Number, Symbol, Integer, Rational, Float, Add, Mul, Pow
 from typing import List
 import logging
 
+from src.models.egen.vocab import SYMPY_TO_PREFIX, PREFIX_ARITY
+
 logger = logging.getLogger(__name__)
 
-SYMPY_TO_PREFIX = {
-    sp.Add: "add",
-    sp.Mul: "mul",
-    sp.Pow: "pow",
-    sp.exp: "exp",
-    sp.log: "log",
-    sp.Abs: "abs",
-    # trigonometric
-    sp.sin: "sin",
-    sp.cos: "cos",
-    sp.tan: "tan",
-    sp.cot: "cot",
-    sp.sec: "sec",
-    sp.csc: "csc",
-    # inverse trig
-    sp.asin: "asin",
-    sp.acos: "acos",
-    sp.atan: "atan",
-    sp.acot: "acot",
-    sp.asec: "asec",
-    sp.acsc: "acsc",
-    # hyperbolic
-    sp.sinh: "sinh",
-    sp.cosh: "cosh",
-    sp.tanh: "tanh",
-    sp.coth: "coth",
-    sp.sech: "sech",
-    sp.csch: "csch",
-    # inverse hyperbolic
-    sp.asinh: "asinh",
-    sp.acosh: "acosh",
-    sp.atanh: "atanh",
-    sp.acoth: "acoth",
-    sp.asech: "asech",
-    sp.acsch: "acsch",
-    # special functions (IntegralIndx extensions)
-    sp.polylog: "Li",
-    sp.zeta: "zeta",
-}
-
 def _handle_number(num: Number) -> List[str]:
-    """Args:
-        num: SymPy Number object
-    Returns:
-        List of prefix tokens"""
     if isinstance(num, Integer):
         val = int(num)
         if 0 <= val <= 9:
@@ -65,8 +23,9 @@ def _handle_number(num: Number) -> List[str]:
             return ["INT-"] + digits
 
     elif isinstance(num, Rational):
-        numer_tokens = _handle_number(num.p)
-        denom_tokens = _handle_number(num.q)
+        # num.p and num.q return Python ints, so wrap in Integer() for SymPy type
+        numer_tokens = _handle_number(Integer(num.p))
+        denom_tokens = _handle_number(Integer(num.q))
         return ["div"] + numer_tokens + denom_tokens
 
     elif isinstance(num, Float):
@@ -137,18 +96,10 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
                 return result
         elif expr_type == Pow:
             base, exp = expr.args
-            if exp == 2:
-                return ["pow2"] + _sympy_to_prefix_tokens(base)
-            elif exp == 3:
-                return ["pow3"] + _sympy_to_prefix_tokens(base)
-            elif exp == 4:
-                return ["pow4"] + _sympy_to_prefix_tokens(base)
-            elif exp == 5:
-                return ["pow5"] + _sympy_to_prefix_tokens(base)
-            elif exp == sp.Rational(1, 2):
+            # special case: sqrt(x) = x^(1/2)
+            if exp == sp.Rational(1, 2):
                 return ["sqrt"] + _sympy_to_prefix_tokens(base)
-            elif exp == -1:
-                return ["inv"] + _sympy_to_prefix_tokens(base)
+            # all other powers use standard pow notation
             else:
                 return [op_name] + _sympy_to_prefix_tokens(base) + _sympy_to_prefix_tokens(exp)
         elif expr_type == sp.polylog:
@@ -172,7 +123,6 @@ def _sympy_to_prefix_tokens(expr: Expr) -> List[str]:
                 tokens.extend(_sympy_to_prefix_tokens(arg))
             return tokens
     # fallback: unknown expression type
-    # this should not happen if vocabulary is complete
     logger.warning(f"Unknown SymPy expression type: {type(expr)} for {expr}")
     return [str(expr)]
 
@@ -237,25 +187,11 @@ def _prefix_to_infix(tokens: List[str]) -> tuple[str, List[str]]:
     if not tokens:
         raise ValueError("empty token list in prefix_to_infix")
     op = tokens[0]
-    OPERATORS = {
-        # binary
-        'add': 2, 'sub': 2, 'mul': 2, 'div': 2, 'pow': 2,
-        # unary
-        'inv': 1, 'pow2': 1, 'pow3': 1, 'pow4': 1, 'pow5': 1,
-        'sqrt': 1, 'abs': 1,
-        'exp': 1, 'log': 1,
-        'sin': 1, 'cos': 1, 'tan': 1, 'cot': 1, 'sec': 1, 'csc': 1,
-        'sinh': 1, 'cosh': 1, 'tanh': 1, 'coth': 1, 'sech': 1, 'csch': 1,
-        'asin': 1, 'acos': 1, 'atan': 1, 'acot': 1, 'asec': 1, 'acsc': 1,
-        'asinh': 1, 'acosh': 1, 'atanh': 1, 'acoth': 1, 'asech': 1, 'acsch': 1,
-        'Li': 2,   # polylog(order, x)
-        'zeta': 1,
-    }
     CONSTANTS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'pi', 'e'}
     VARIABLES = {'x', 'a', 'b', 'c', 's', 't', 'u', 'v', 'w', 'y', 'z'}
-    if op in OPERATORS:
+    if op in PREFIX_ARITY:
         # operator: recursively parse arguments
-        arity = OPERATORS[op]
+        arity = PREFIX_ARITY[op]
         args = []
         remaining = tokens[1:]
         for _ in range(arity):

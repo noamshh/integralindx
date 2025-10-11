@@ -7,6 +7,7 @@ import sympy as sp
 from src.models.base_embedder import BaseEmbedder
 from corpus.formula_models import IntegrandGroup
 from src.utils.variable_normalization import normalize_parameters
+from src.search.embedding_cache import load_embedding_cache, save_embedding_cache
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,6 @@ class IntegrandGroupSearch:
             return None
         idx = self._hash_to_idx[integrand_hash]
         group = self.groups[idx]
-
         return {
             'group_id': group.id,
             'integrand_canonical': group.integrand_canonical,
@@ -119,7 +119,7 @@ class IntegrandGroupSearch:
             'latex_variants': group.latex_variants,
             'definite_instances': group.definite_instances,
             'indefinite_instances': group.indefinite_instances,
-            'instances': []  # will be populated by caller if needed
+            'instances': []
         }
 
     def get_statistics(self) -> Dict:
@@ -127,7 +127,6 @@ class IntegrandGroupSearch:
             len(g.definite_instances) + len(g.indefinite_instances)
             for g in self.groups
         )
-
         return {
             'available': True,
             'total_groups': len(self.groups),
@@ -136,3 +135,10 @@ class IntegrandGroupSearch:
             'embedding_dim': self.embedding_dim,
             'embedder': self.embedder.__class__.__name__ if self.embedder else None
         }
+
+    def save_cache(self, embedder_name: str, metadata: Optional[Dict] = None) -> None:
+        save_embedding_cache(self, embedder_name, metadata)
+
+    @classmethod
+    def load_cache(cls, embedder_name: str, embedder=None) -> 'IntegrandGroupSearch':
+        return load_embedding_cache(embedder_name, embedder)

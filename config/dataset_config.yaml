@@ -1,9 +1,0 @@
-defaults:
-  - dataset: test
-  - _self_
-
-hydra:
-  run:
-    dir: ./outputs/dataset_generation/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  job:
-    chdir: false

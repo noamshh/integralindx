@@ -1,0 +1,9 @@
+defaults:
+  - dataset/tsv_construction: full
+  - _self_
+
+hydra:
+  run:
+    dir: ./outputs/tsv_construction/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: false
