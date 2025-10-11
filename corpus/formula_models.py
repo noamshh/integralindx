@@ -53,14 +53,14 @@ class RawFormula(BaseFormula):
 
 @dataclass
 class NormalizedFormula(BaseFormula):
-    """Result of normalizing a raw LaTeX formula, keeping first expression as main and rest as equivalent forms"""
+    """Result of normalizing a raw latex formula, keeping first expression as main and rest as equivalent forms"""
     raw_latex: str
     source_id: str
     accepted: bool
-    leading_expression: Optional[str] = None           # main/first expression from chain
-    equivalent_forms: List[str] = field(default_factory=list)  # other expressions from chain
-    parametric_conditions: Optional[str] = None        # conditions like "for x > 0"
-    rejection_reason: Optional[str] = None             # why rejected if not accepted
+    leading_expression: Optional[str] = None
+    equivalent_forms: List[str] = field(default_factory=list)
+    parametric_conditions: Optional[str] = None
+    rejection_reason: Optional[str] = None
     provenance: Optional[Dict[str, Any]] = field(default_factory=dict)
     checksum: Optional[str] = None
     created_at: str = field(default_factory=now_iso)
@@ -141,13 +141,10 @@ class IntegralFormula(BaseFormula):
         if 'answer' in origin:
             mse_answer_id = mse_question_id
 
-        # canonicalize immediately after parsing (old behavior)
-        # or skip canonicalization for later (new pipeline: validate → normalize → then canonicalize)
         if auto_canonicalize:
             integrand_canonical, integrand_hash = canonicalize_integrand(sympy_result['integrand'])
             integrand_family = None
         else:
-            # skip canonicalization - will be done after variable normalization
             integrand_canonical = None
             integrand_hash = None
             integrand_family = None
@@ -181,11 +178,11 @@ class IntegralFormula(BaseFormula):
 
 @dataclass
 class IntegrandGroup(BaseFormula):
-    """Deduplicated group of integrals with same canonical integrand"""
+    """Deduped group of integrals with same canonical integrand"""
     integrand_canonical: str
     integrand_hash: str
-    indefinite_instances: List[str] = field(default_factory=list)  # IntegralFormula IDs
-    definite_instances: List[str] = field(default_factory=list)    # IntegralFormula IDs
+    indefinite_instances: List[str] = field(default_factory=list)
+    definite_instances: List[str] = field(default_factory=list)
     unique_mse_questions: Set[int] = field(default_factory=set)
     latex_variants: List[str] = field(default_factory=list)
     integrand_family: Optional[str] = None
@@ -197,14 +194,14 @@ class IntegrandGroup(BaseFormula):
         return f"integrand-group-{integrand_hash}"
 
     def to_dict(self) -> dict:
-        """Convert to dictionary with JSON-serializable types"""
+        """Convert to dictionary with json-serializable types"""
         return {
             'id': self.id,
             'integrand_canonical': self.integrand_canonical,
             'integrand_hash': self.integrand_hash,
             'indefinite_instances': self.indefinite_instances,
             'definite_instances': self.definite_instances,
-            'unique_mse_questions': sorted(list(self.unique_mse_questions)),  # convert set to sorted list
+            'unique_mse_questions': sorted(list(self.unique_mse_questions)),
             'latex_variants': self.latex_variants,
             'integrand_family': self.integrand_family,
             'checksum': self.checksum,
