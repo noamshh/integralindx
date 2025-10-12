@@ -59,6 +59,7 @@ class EGenPipelineConfig:
     egraph_binary_path: Path
     egraph_n_equivalents: int
     egraph_token_limit: int
+    egraph_max_token_limit: int
     egraph_time_limit: int
     output_equivalents_dir: Path
     output_metadata_file: str
@@ -77,6 +78,7 @@ def load_egen_pipeline_config(cfg: DictConfig) -> EGenPipelineConfig:
         egraph_binary_path=project_root / ds.egraph.binary_path,
         egraph_n_equivalents=ds.egraph.n_equivalents,
         egraph_token_limit=ds.egraph.token_limit,
+        egraph_max_token_limit=ds.egraph.max_token_limit,
         egraph_time_limit=ds.egraph.time_limit,
         output_equivalents_dir=project_root / ds.output.equivalents_dir,
         output_metadata_file=ds.output.metadata_file,

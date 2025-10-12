@@ -3,16 +3,17 @@ data:
 
 egraph:
   binary_path: "bin/egen.exe"
-  n_equivalents: 100
+  n_equivalents: 40
   token_limit: 12
-  time_limit: 300
+  max_token_limit: 12
+  time_limit: 500
 
 output:
   equivalents_dir: "data/ml_training/equivalents"
   metadata_file: "equivalents_metadata.json"
 
 processing:
-  batch_size: 50
+  batch_size: 100
 
 logging:
   level: "INFO"

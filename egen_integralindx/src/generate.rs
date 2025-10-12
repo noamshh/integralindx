@@ -174,14 +174,14 @@ fn generate_file(cli: &mut Vec<CliDtype>) {
     }
 
     /* sync all OS-internal metadata to disk */
-    match input_file.sync_all() {
-        Ok(_) => {},
-        Err(e) => {
-            log_error(&format!("Failed to sync all OS-internal metadata to '{:?}' in filesystem.\n", input_file));
-            log_error(&format!("{}\n", e));
-            exit(1);
-        },
-    }
+    // match input_file.sync_all() {
+    //     Ok(_) => {},
+    //     Err(e) => {
+    //         log_error(&format!("Failed to sync all OS-internal metadata to '{:?}' in filesystem.\n", input_file));
+    //         log_error(&format!("{}\n", e));
+    //         exit(1);
+    //     },
+    // }
     match output_file.sync_all() {
         Ok(_) => {},
         Err(e) => {

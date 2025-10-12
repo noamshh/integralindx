@@ -1,5 +1,4 @@
 from typing import List
-from collections import Counter
 from src.models.egen.vocab import CONSTANTS, VARIABLES, OPERATORS
 
 
@@ -34,22 +33,6 @@ class MathTokenizer:
                 next_id += 1
         for token in OPERATORS.keys():
             if token not in self.vocab:
-                self.vocab[token] = next_id
-                self.id_to_token[next_id] = token
-                next_id += 1
-
-    def build_vocab_from_file(self, tsv_path: str, min_freq: int = 2):
-        token_counts = Counter()
-        with open(tsv_path) as f:
-            for line in f:
-                parts = line.strip().split('\t')
-                for expr in parts:
-                    tokens = expr.split()  # space-separated prefix notation
-                    token_counts.update(tokens)
-        # build vocabulary from frequent tokens
-        next_id = len(self.vocab)
-        for token, count in token_counts.items():
-            if count >= min_freq and token not in self.vocab:
                 self.vocab[token] = next_id
                 self.id_to_token[next_id] = token
                 next_id += 1

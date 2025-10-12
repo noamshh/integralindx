@@ -338,8 +338,6 @@ pub fn math_rule() -> Vec<Rewrite> {
         /* basic exp identities */
         rw!("exp(0)=1"; "(exp 0)" => "1"),
         rw!("1=exp(0)"; "1" => "(exp 0)"),
-        rw!("exp(log(x))=x"; "(exp (log ?x))" => "?x" if not_zero("?x")),
-        rw!("log(exp(x))=x"; "(log (exp ?x))" => "?x"),
 
         /* exp product/quotient rules */
         rw!("exp(x)*exp(y)=exp(x+y)"; "(* (exp ?x) (exp ?y))" => "(exp (+ ?x ?y))"),

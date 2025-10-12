@@ -14,9 +14,9 @@
                     <a href="/" id="logoLink" style="text-decoration: none;">
                         <h1 class="display-4 logo-text"><span class="integral-symbol">∫</span> IntegralIn<span class="dx-text">dx</span></h1>
                     </a>
-                    <p class="lead">Find similar mathematical integrals using E-Gen embeddings</p>
+                    <p class="lead">Find similar integrals using E-Gen embeddings</p>
                     <p class="text-muted">
-                        More than 26k integrals from <a href="https://math.stackexchange.com" target="_blank" class="text-muted text-decoration-none">MathStackExchange</a>
+                        Browse 12,337 unique integrands, extracted from 23,638 <a href="https://math.stackexchange.com" target="_blank" class="text-muted text-decoration-none">MathStackExchange</a> integrals
                     </p>
                 </div>
             </div>
@@ -33,10 +33,15 @@
                             </label>
                             <input type="text" class="form-control search-input" id="queryInput"
                                    placeholder="e.g., log(sin(x))" required maxlength="200">
-                            <div class="form-text format-help" id="formatHelp">
-                                <strong>Allowed functions:</strong> sin, cos, tan, cot, sec, csc, asin, acos, atan, acot, asec, acsc, sinh, cosh, tanh, coth, sech, csch, asinh, acosh, atanh, acoth, asech, acsch, exp, log, abs, sqrt, polylog, zeta
-                                <br><strong>Allowed parameters:</strong> max 3 from {a, b, c}
-                                <br><strong>Examples:</strong> <code>log(sin(x))</code>,  <code>1/(1+x**2)</code>,  <code>a*log(x)</code>,  <code>polylog(2, x)</code>,  <code>exp(-x)</code>
+                            <div class="form-text format-help" id="formatHelp" style="font-size: 0.75rem; line-height: 1.4;">
+                                <strong>Allowed functions:</strong>
+                                Trig: <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>cot</code>, <code>sec</code>, <code>csc</code>
+                                Inverse Trig: <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>acot</code>, <code>asec</code>, <code>acsc</code>
+                                Hyperbolic: <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>coth</code>, <code>sech</code>, <code>csch</code>
+                                Inverse Hyperbolic: <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>acoth</code>, <code>asech</code>, <code>acsch</code>
+                                Other: <code>exp</code>, <code>log</code>, <code>abs</code>, <code>sqrt</code>, <code>polylog</code>, <code>zeta</code>
+                                <br><strong>Parameters:</strong> max 3 from <code>a</code>, <code>b</code>, <code>c</code>
+                                <br><strong>Examples:</strong> <code>log(sin(x))</code>, <code>1/(a**2 + x**2)</code>, <code>x**a * log(x)</code>, <code>polylog(2, x)</code>, <code>exp(-x)</code>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary search-button w-100">
@@ -60,9 +65,9 @@
                         <p class="about-description">
                             This is a personal research demonstration based on the recent paper
                             <a href="https://arxiv.org/abs/2501.14951" target="_blank" class="text-decoration-none"><em>"E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions"</em></a>
-                            by Zheng et al. (2025). The project implements <strong>E-Gen embeddings</strong>, a novel approach
+                            by Zheng et al. (2025). The project implements <em>E-Gen embeddings</em>, a novel approach
                             for creating semantic representations of mathematical expressions in a continuous vector space.
-                            The database contains over 26,000 integral expressions sourced from Math StackExchange, serving as
+                            The database contains 23,638 integral expressions sourced from Math StackExchange, serving as
                             a playground to test how E-Gen embeddings capture mathematical similarity and return related expressions
                             in the embedding space. The goal is to enable similarity search that goes beyond simple pattern matching
                             to understand genuine mathematical structure and relationships.

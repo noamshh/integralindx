@@ -12,11 +12,11 @@ from src.models.egen.training.losses import build_criterion
 from src.models.egen.training.trainer import ContrastiveTrainer
 from src.models.egen.training.checkpointing import load_checkpoint, get_latest_checkpoint
 from src.models.egen.training.optimization import build_optimizer, build_scheduler
+from src.models.egen.training.logger import TrainingLogger, setup_logging
+from src.utils.paths import get_paths
 
-logger = logging.getLogger(__name__)
 
-
-def build_model(model_cfg: DictConfig, vocab_size: int, device: torch.device) -> MathEncoder:
+def build_model(model_cfg: DictConfig, vocab_size: int, device: torch.device, logger: TrainingLogger) -> MathEncoder:
     encoder_cfg = model_cfg.encoder
     model = MathEncoder(
         vocab_size=vocab_size,
@@ -34,47 +34,49 @@ def build_model(model_cfg: DictConfig, vocab_size: int, device: torch.device) ->
 
 @hydra.main(version_base=None, config_path="../../../config", config_name="config")
 def main(cfg: DictConfig) -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    logger.info("configuration:\n" + OmegaConf.to_yaml(cfg))
-    device_name = cfg.training.device
+    # logging
+    paths = get_paths()
+    log_dir = paths['models']['runs']
+    experiment_name = cfg.training.checkpoints.experiment
+    train_logger = setup_logging(log_dir=log_dir, experiment_name=experiment_name)
+
+    train_logger.info("configuration:\n" + OmegaConf.to_yaml(cfg))
+
+    device_name = cfg.training.training.device
     if device_name == 'cuda' and not torch.cuda.is_available():
-        logger.warning("CUDA not available, falling back to CPU")
+        train_logger.warning("CUDA not available, using CPU")
         device_name = 'cpu'
     device = torch.device(device_name)
-    logger.info(f"using device: {device}")
+    train_logger.info(f"using device: {device}")
 
     # checkpoint directory
-    experiment_name = cfg.training.checkpoints.experiment
     checkpoint_dir = Path(cfg.training.checkpoints.dir) / experiment_name
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"experiment: {experiment_name}")
-    logger.info(f"checkpoint directory: {checkpoint_dir}")
+    train_logger.info(f"experiment: {experiment_name}")
+    train_logger.info(f"checkpoint directory: {checkpoint_dir}")
 
     # tokenizer
-    logger.info("initializing tokenizer...")
+    train_logger.info("initializing tokenizer...")
     tokenizer = MathTokenizer()
     vocab_size = len(tokenizer.vocab)
-    logger.info(f"vocabulary size: {vocab_size}")
+    train_logger.info(f"vocabulary size: {vocab_size}")
 
     # datasets
-    logger.info("loading datasets...")
+    train_logger.info("loading datasets...")
     dataset_cfg = cfg.training.dataset
     train_dataset = ContrastiveDataset(
         tsv_path=dataset_cfg.train_tsv,
         tokenizer=tokenizer,
         max_seq_len=dataset_cfg.max_seq_len
     )
-    logger.info(f"training examples: {len(train_dataset)}")
+    train_logger.info(f"training examples: {len(train_dataset)}")
 
     val_dataset = ContrastiveDataset(
         tsv_path=dataset_cfg.val_tsv,
         tokenizer=tokenizer,
         max_seq_len=dataset_cfg.max_seq_len
     )
-    logger.info(f"validation examples: {len(val_dataset)}")
+    train_logger.info(f"validation examples: {len(val_dataset)}")
 
     # data loaders
     train_loader = DataLoader(
@@ -92,20 +94,16 @@ def main(cfg: DictConfig) -> None:
         collate_fn=val_dataset.collate_fn
     )
 
-    # build model
-    logger.info("building model...")
-    model = build_model(cfg.model, vocab_size, device)
+    train_logger.info("building model...")
+    model = build_model(cfg.model, vocab_size, device, train_logger)
 
-    # build criterion
-    logger.info("building criterion...")
+    train_logger.info("building criterion...")
     criterion = build_criterion(**OmegaConf.to_container(cfg.training.criterion))
 
-    # build optimizer
-    logger.info("building optimizer...")
+    train_logger.info("building optimizer...")
     optimizer = build_optimizer(model, OmegaConf.to_container(cfg.training.optimizer))
 
-    # build scheduler
-    logger.info("building scheduler...")
+    train_logger.info("building scheduler...")
     scheduler = build_scheduler(
         optimizer,
         OmegaConf.to_container(cfg.training.scheduler),
@@ -116,8 +114,8 @@ def main(cfg: DictConfig) -> None:
     start_epoch = 1
     latest_checkpoint = get_latest_checkpoint(checkpoint_dir)
     if latest_checkpoint and latest_checkpoint.exists():
-        logger.info(f"found checkpoint: {latest_checkpoint}")
-        logger.info("to resume, loading checkpoint...")
+        train_logger.info(f"found checkpoint: {latest_checkpoint}")
+        train_logger.info("resuming from checkpoint...")
         checkpoint = load_checkpoint(
             checkpoint_path=latest_checkpoint,
             model=model,
@@ -126,10 +124,10 @@ def main(cfg: DictConfig) -> None:
             device=device
         )
         start_epoch = checkpoint.get('epoch', 0) + 1
-        logger.info(f"resuming from epoch {start_epoch}")
+        train_logger.info(f"resuming from epoch {start_epoch}")
 
     # trainer
-    logger.info("initializing trainer...")
+    train_logger.info("initializing trainer...")
     trainer = ContrastiveTrainer(
         model=model,
         criterion=criterion,
@@ -137,6 +135,7 @@ def main(cfg: DictConfig) -> None:
         scheduler=scheduler,
         train_loader=train_loader,
         val_loader=val_loader,
+        logger=train_logger,
         device=device,
         checkpoint_dir=checkpoint_dir,
         grad_clip_norm=cfg.training.training.grad_clip_norm,
@@ -144,14 +143,10 @@ def main(cfg: DictConfig) -> None:
         log_every_n_iters=cfg.training.training.log_every_n_iters
     )
     # train
-    logger.info("=" * 60)
-    logger.info("starting training")
-    logger.info("=" * 60)
     trainer.train(
         num_epochs=cfg.training.training.n_epochs,
-        start_epoch=start_epoch
+        start_epoch=start_epoch,
     )
-    logger.info("training complete!")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,8 @@ data:
 
 ml_training:
   root: "data/ml_training"
-  seeds: "data/ml_seeds/synthetic_seeds.txt"
+  synthetic_seeds: "data/ml_seeds/synthetic_seeds.txt"
+  frozen_seeds: "data/ml_seeds/frozen_seeds.txt"
 
 models:
   checkpoints: "data/models/checkpoints"

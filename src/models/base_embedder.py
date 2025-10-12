@@ -13,8 +13,7 @@ class BaseEmbedder(ABC):
 
     @abstractmethod
     def encode(self, expressions: Union[str, List[str]]) -> np.ndarray:
-        """
-        Encode expressions to embeddings
+        """Encode expressions to embeddings
         Args:
             expressions: single expression or list of expressions
         Returns:

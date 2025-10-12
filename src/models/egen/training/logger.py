@@ -6,29 +6,22 @@ from typing import Optional
 
 
 class TrainingLogger:
-    def __init__(
-        self,
-        log_dir: Path,
-        experiment_name: str,
-        log_level: str = 'INFO',
-        log_to_file: bool = True,
-        log_to_console: bool = True,
-    ):
-        """
-        Args:
+    def __init__(self, log_dir: Path, experiment_name: str, log_level: str = 'INFO',
+                 log_to_file: bool = True, log_to_console: bool = True):
+        """Args:
             log_dir: directory to save logs
             experiment_name: name of experiment
             log_level: logging level (DEBUG, INFO, WARNING, ERROR)
             log_to_file: enable file logging
             log_to_console: enable console logging
-        Inspired by https://github.com/hongbozheng/transformer/logger.py but using python logging module
-        """
+        Inspired by https://github.com/hongbozheng/transformer/logger.py but using python logging module"""
         self.log_dir = Path(log_dir) / experiment_name
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.experiment_name = experiment_name
         self.logger = logging.getLogger(f'training.{experiment_name}')
         self.logger.setLevel(getattr(logging, log_level.upper()))
         self.logger.handlers = []
+        self.logger.propagate = False
         if log_to_file:
             log_file = self.log_dir / 'training.log'
             file_handler = logging.FileHandler(log_file, mode='a')
@@ -92,7 +85,7 @@ class TrainingLogger:
         log_msg = f"Epoch {epoch} | Iter {iteration:6d} | Loss: {loss:.4f}"
         if learning_rate is not None:
             log_msg += f" | LR: {learning_rate:.2e}"
-        self.logger.debug(log_msg)
+        self.logger.info(log_msg)
 
     def log_checkpoint(self, checkpoint_path: Path, epoch: int, loss: float):
         self.logger.info(f"saved checkpoint: {checkpoint_path.name} (epoch={epoch}, loss={loss:.4f})")
@@ -100,20 +93,25 @@ class TrainingLogger:
     def log_best_model(self, val_loss: float, epoch: int):
         self.logger.info(f"✓ new best model: val_loss={val_loss:.4f} (epoch={epoch})")
 
-    def log_training_start(self, num_epochs: int, train_batches: int, val_batches: int, model_params: int):
+
+    def log_training_start(self, num_epochs: int, train_batches: int, val_batches: int, model_params: int,
+                           checkpoint_dir: Path, start_epoch: int = 1):
         self.logger.info("=" * 60)
-        self.logger.info(f"starting training for {num_epochs} epochs")
+        self.logger.info(f"starting training from epoch {start_epoch} to {num_epochs}")
         self.logger.info(f"model parameters: {model_params:,}")
         self.logger.info(f"training batches: {train_batches}")
         self.logger.info(f"validation batches: {val_batches}")
+        self.logger.info(f"checkpoint directory: {checkpoint_dir}")
         self.logger.info("=" * 60)
 
-    def log_training_end(self, best_val_loss: float):
+    def log_training_end(self, best_val_loss: float, checkpoint_dir: Path):
         self.logger.info("=" * 60)
         self.logger.info("training complete!")
         self.logger.info(f"best validation loss: {best_val_loss:.4f}")
+        self.logger.info(f"checkpoints saved to: {checkpoint_dir}")
         self.logger.info(f"logs saved to: {self.log_dir}")
         self.logger.info("=" * 60)
+        self.logger.info("\n"*8)
 
     def _save_stats(self):
         with open(self.stats_file, 'w') as f:

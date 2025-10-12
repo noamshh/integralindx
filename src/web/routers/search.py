@@ -12,7 +12,7 @@ router = APIRouter()
 
 # global search engine - will be set by main.py
 search_engine = None
-available_embedders = {}  # dict of embedder_name -> embedder instance
+available_embedders = {}
 
 class MathQuery(BaseModel):
     query: str = Field(..., max_length=200, description="mathematical expression (max 200 characters)")
@@ -81,7 +81,6 @@ async def search_similar_integrands(query: MathQuery):
             )
         k = min(max(query.k, 1), 20)
         results = search_engine.search(sympy_integrand, k=k, embedder=embedder)
-
         return SimilarityResult(
             query=query.query,
             parsed_query=sympy_integrand,
@@ -90,7 +89,6 @@ async def search_similar_integrands(query: MathQuery):
             success=True,
             message=f"found {len(results)} similar integrand groups using {embedder_name} ({parse_message})"
         )
-
     except Exception as e:
         logger.error(f"search failed: {e}")
         return SimilarityResult(

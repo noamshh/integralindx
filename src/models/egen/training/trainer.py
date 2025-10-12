@@ -5,10 +5,9 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from typing import Any, Optional
 from tqdm import tqdm
-import logging
 
 from src.models.egen.training.checkpointing import save_best_model, save_last_checkpoint, save_periodic_checkpoint
-logger = logging.getLogger(__name__)
+from src.models.egen.training.logger import TrainingLogger
 
 
 class ContrastiveTrainer:
@@ -20,6 +19,7 @@ class ContrastiveTrainer:
         scheduler: Optional[Any],
         train_loader: DataLoader,
         val_loader: Optional[DataLoader],
+        logger: TrainingLogger,
         device: torch.device,
         checkpoint_dir: Path,
         grad_clip_norm: float = 1.0,
@@ -34,6 +34,7 @@ class ContrastiveTrainer:
             scheduler: learning rate scheduler (optional)
             train_loader: training data loader
             val_loader: validation data loader (optional)
+            logger: TrainingLogger instance
             device: device to train on
             checkpoint_dir: directory to save checkpoints
             grad_clip_norm: gradient clipping max norm
@@ -46,6 +47,7 @@ class ContrastiveTrainer:
         self.scheduler = scheduler
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.logger = logger
         self.device = device
         self.checkpoint_dir = Path(checkpoint_dir)
         self.grad_clip_norm = grad_clip_norm
@@ -98,7 +100,7 @@ class ContrastiveTrainer:
             avg_loss = total_loss / (batch_idx + 1)
             progress_bar.set_postfix({'loss': f'{avg_loss:.4f}', 'lr': f'{self._get_lr():.2e}'})
             if self.global_iteration % self.log_every_n_iters == 0:
-                logger.info(f"Epoch {epoch} | Iter {self.global_iteration} | Loss: {loss.item():.4f} | LR: {self._get_lr():.2e}")
+                self.logger.log_iteration(epoch, self.global_iteration, loss.item(), learning_rate=self._get_lr())
             if self.global_iteration % self.save_every_n_iters == 0 and self.global_iteration > 0:
                 save_periodic_checkpoint(
                     model=self.model,
@@ -119,7 +121,7 @@ class ContrastiveTrainer:
 
     def validate(self, epoch: int) -> float:
         if self.val_loader is None:
-            logger.warning("no validation loader provided, skipping validation")
+            self.logger.warning("no validation loader provided, skipping validation")
             return float('inf')
         self.model.eval()
         total_loss = 0.0
@@ -149,23 +151,16 @@ class ContrastiveTrainer:
                 total_loss += loss.item()
 
         avg_val_loss = total_loss / num_batches
-        logger.info(f"Epoch {epoch} | Validation Loss: {avg_val_loss:.4f}")
         return avg_val_loss
 
     def train(self, num_epochs: int, start_epoch: int = 1) -> None:
-        logger.info("=" * 60)
-        logger.info(f"starting training from epoch {start_epoch} to {num_epochs}")
-        logger.info(f"model parameters: {sum(p.numel() for p in self.model.parameters()):,}")
-        logger.info(f"training batches: {len(self.train_loader)}")
-        if self.val_loader:
-            logger.info(f"validation batches: {len(self.val_loader)}")
-        logger.info(f"checkpoint directory: {self.checkpoint_dir}")
-        logger.info("=" * 60)
-
+        model_params = sum(p.numel() for p in self.model.parameters())
+        train_batches, val_batches = len(self.train_loader), len(self.val_loader)
+        self.logger.log_training_start(num_epochs, train_batches, val_batches, model_params,
+                                       self.checkpoint_dir, start_epoch)
         for epoch in range(start_epoch, num_epochs + 1):
             self.current_epoch = epoch
             train_loss = self.train_epoch(epoch)
-            logger.info(f"Epoch {epoch}/{num_epochs} | Train Loss: {train_loss:.4f}")
             # validate
             if self.val_loader is not None:
                 val_loss = self.validate(epoch)
@@ -178,6 +173,7 @@ class ContrastiveTrainer:
                 )
             else:
                 val_loss = None
+            self.logger.log_epoch(epoch, train_loss, val_loss=val_loss, learning_rate=self._get_lr())
             save_last_checkpoint(
                 model=self.model,
                 optimizer=self.optimizer,
@@ -188,11 +184,7 @@ class ContrastiveTrainer:
                 checkpoint_dir=self.checkpoint_dir,
                 best_val_loss=self.best_val_loss
             )
-        logger.info("=" * 60)
-        logger.info("training complete!")
-        logger.info(f"best validation loss: {self.best_val_loss:.4f}")
-        logger.info(f"checkpoints saved to: {self.checkpoint_dir}")
-        logger.info("=" * 60)
+        self.logger.log_training_end(self.best_val_loss, self.checkpoint_dir)
 
     def _get_lr(self) -> float:
         return self.optimizer.param_groups[0]['lr']

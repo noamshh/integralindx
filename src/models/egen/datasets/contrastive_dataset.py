@@ -3,6 +3,53 @@ from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from typing import List, Dict
 
+
+# ==============================================================================
+# TEMPORARY FIX: Convert legacy E-Gen integer format to vocabulary format
+# TODO: Remove this after regenerating dataset with fixed egen_wrapper.py
+# ==============================================================================
+def _normalize_integers_for_vocab(prefix_expr: str) -> str:
+    """TEMPORARY: convert integer tokens to vocabulary format.
+
+    Converts E-Gen output like "mul -1 x" → "mul INT- 1 x"
+    This is a temporary workaround for existing datasets that have
+    literal negative integers instead of the INT- format.
+
+    Args:
+        prefix_expr: prefix notation expression string
+
+    Returns:
+        normalized expression with INT+/INT- format for multi-digit/negative integers"""
+    tokens = prefix_expr.split()
+    normalized = []
+
+    for token in tokens:
+        # check if token is an integer
+        try:
+            val = int(token)
+        except ValueError:
+            # not an integer, keep as-is
+            normalized.append(token)
+            continue
+
+        # single digit non-negative (0-9) - keep as-is
+        if 0 <= val <= 9:
+            normalized.append(token)
+        # multi-digit positive - convert to INT+ format
+        elif val > 9:
+            normalized.append("INT+")
+            normalized.extend(list(str(val)))
+        # negative - convert to INT- format
+        elif val < 0:
+            normalized.append("INT-")
+            normalized.extend(list(str(abs(val))))
+        else:
+            normalized.append(token)
+
+    return ' '.join(normalized)
+# ==============================================================================
+
+
 class ContrastiveDataset(Dataset):
     def __init__(self, tsv_path: str, tokenizer, max_seq_len: int = 128):
         """Args:
@@ -20,6 +67,11 @@ class ContrastiveDataset(Dataset):
                 parts = line.split('\t')
                 if len(parts) < 3:
                     continue
+
+
+                # TODO: DELETE THIS
+                parts = [_normalize_integers_for_vocab(part) for part in parts]
+
                 query = parts[0]
                 positive = parts[1]
                 negatives = parts[2:]

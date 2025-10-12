@@ -25,7 +25,7 @@ class BaselineEmbedder(BaseEmbedder):
         elif method == 'sentence_bert':
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.embedding_dim = 384
-            self.is_fitted = True  # pretrained, ready to use
+            self.is_fitted = True
         else:
             raise ValueError(f"unknown method: {method}")
 
