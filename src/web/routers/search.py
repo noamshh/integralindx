@@ -13,6 +13,7 @@ router = APIRouter()
 # global search engine - will be set by main.py
 search_engine = None
 available_embedders = {}
+dev_mode = False
 
 class MathQuery(BaseModel):
     query: str = Field(..., max_length=200, description="mathematical expression (max 200 characters)")
@@ -34,6 +35,11 @@ def set_search_engine(engine, embedders: Dict):
     global search_engine, available_embedders
     search_engine = engine
     available_embedders = embedders
+
+def set_dev_mode(enabled: bool):
+    global dev_mode
+    dev_mode = enabled
+    logger.info(f"search router: dev mode {'enabled' if enabled else 'disabled'}")
 
 @router.post("/api/validate")
 async def validate_expression(request: ValidationRequest):
@@ -71,13 +77,14 @@ async def search_similar_integrands(query: MathQuery):
         embedder = available_embedders[embedder_name]
         sympy_integrand, parse_message = parse_query_to_sympy_integrand(query.query)
         if sympy_integrand is None:
+            error_msg = parse_message if dev_mode else "Invalid expression"
             return SimilarityResult(
                 query=query.query,
                 parsed_query=None,
                 embedder_used=embedder_name,
                 results=[],
                 success=False,
-                message=parse_message
+                message=error_msg
             )
         k = min(max(query.k, 1), 20)
         results = search_engine.search(sympy_integrand, k=k, embedder=embedder)
@@ -91,11 +98,13 @@ async def search_similar_integrands(query: MathQuery):
         )
     except Exception as e:
         logger.error(f"search failed: {e}")
+        # sanitize error message in non-dev mode
+        error_msg = f"search failed: {str(e)}" if dev_mode else "Invalid expression"
         return SimilarityResult(
             query=query.query,
             parsed_query=None,
             embedder_used=query.embedder,
             results=[],
             success=False,
-            message=f"search failed: {str(e)}"
+            message=error_msg
         )

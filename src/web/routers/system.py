@@ -8,6 +8,7 @@ router = APIRouter()
 
 search_engine = None
 templates = None
+dev_mode = False
 
 def set_search_engine(engine):
     global search_engine
@@ -17,11 +18,17 @@ def set_templates(template_instance):
     global templates
     templates = template_instance
 
+def set_dev_mode(enabled: bool):
+    global dev_mode
+    dev_mode = enabled
+    logger.info(f"system router: dev mode {'enabled' if enabled else 'disabled'}")
+
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "title": "IntegralIndx - Integral Similarity Search"
+        "title": "IntegralIndx - Integral Similarity Search",
+        "dev_mode": dev_mode
     })
 
 @router.get("/health")

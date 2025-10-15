@@ -95,6 +95,8 @@ async def lifespan(app: FastAPI):
             router_module.set_templates(templates)
         groups.set_database(database)
         groups.set_dev_mode(dev_mode)
+        system.set_dev_mode(dev_mode)
+        search.set_dev_mode(dev_mode)
 
     except Exception as e:
         logger.error(f"initialization failed: {e}")

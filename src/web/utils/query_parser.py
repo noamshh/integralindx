@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 def normalize_sympy_expression(sympy_expr: str) -> Optional[str]:
     """
-    Normalize a sympy expression string with variable normalization.
-    Uses same normalization as pipeline to ensure query matches database.
+    Applies variable normalization to sympy expression
     Args:
         sympy_expr: sympy expression as string
     Returns:

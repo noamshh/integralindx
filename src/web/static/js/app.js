@@ -230,7 +230,8 @@ class IntegralSearchApp {
     showError(message) {
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
-        errorMessage.textContent = message;
+        const displayMessage = window.DEV_MODE ? message : 'Invalid expression';
+        errorMessage.textContent = displayMessage;
         errorAlert.classList.remove('d-none');
         setTimeout(() => {
             this.hideError();
