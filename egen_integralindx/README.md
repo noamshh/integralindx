@@ -2,17 +2,20 @@
 
 **Forked from**: [hongbozheng/E-Gen](https://github.com/hongbozheng/E-Gen)
 
-This is a customized fork of E-Gen with added rewrite rules for mathematical expression equivalence generation.
+Customized E-Gen fork for integral expression equivalence generation with extended mathematical support.
 
 ## Modifications
 
-### Custom Rewrite Rules (`src/math.rs`)
-Added:
-- Polylogarithm identities: `Li(1,x) = -ln(1-x)`, `Li(2,1) = π²/6`
-- UNK_FUNC handling for unknown functions
-- Extended trig/hyperbolic identities: `sin²(x)+cos²(x)=1`, `cosh²(x)-sinh²(x)=1`
-- Rational function decomposition
-- Logarithm/exponential rules
+**Language Extensions** (`src/math.rs`):
+- Added `Li` (polylogarithm) and `zeta` (Riemann zeta) functions to language definition
+- Added rewrite rules including:
+  - Polylogarithm identities and special values
+  - Extended trigonometric and hyperbolic identities
+  - Logarithm and exponential simplification rules
+  - Power laws and algebraic simplifications
+  - Rational function decomposition
+
+For general E-Gen documentation and theory, see the [original repository](https://github.com/hongbozheng/E-Gen).
 
 
 ## Building
@@ -26,6 +29,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ### Build Release Binary
 ```bash
 cd egen_integralindx
+carge clean
 cargo build --release
 ```
 
@@ -39,31 +43,10 @@ cp egen_integralindx/target/release/egen bin/egen
 
 ## Usage
 
-### Command Line
 ```bash
-# Single expression
-bin/egen -n 20 -l 12 -t 300 "(+ x 1)"
-
-# From file
-bin/egen -n 20 -l 12 -t 300 -i input.txt -o output.txt
+bin/egen -f -n 20 -l 10 -m 10 -t 400 -i input.txt -o output.txt
 ```
-
-### Python Wrapper
-```python
-from pathlib import Path
-from src.egraph import EGenConfig, generate_equivalents
-
-config = EGenConfig(
-    binary_path=Path("bin/egen"),
-    n_equiv=20,
-    token_limit=12,
-    time_limit=300
-)
-
-equivalents = generate_equivalents("(+ x x)", config)
-print(equivalents)  # ['(* 2 x)', '(* x 2)', ...]
-```
-
+- each line in input.txt contains an s-expression
 ## Parameters
 
 - `-n` **n_equiv**: Number of equivalent expressions to generate (default: 20)
@@ -76,7 +59,7 @@ print(equivalents)  # ['(* 2 x)', '(* x 2)', ...]
 
 ## Original E-Gen
 
-**Paper**: "E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions" by Zheng et al. (2024)
+**Paper**: "E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions" by Zheng et al. (2025)
 
 **Original Repository**: https://github.com/hongbozheng/E-Gen
 
