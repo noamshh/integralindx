@@ -8,11 +8,15 @@ splits:
   test: 0.1
   random_seed: 42
 
+sampling:
+  large_cluster_threshold: 200
+  max_positives_per_query: 70
+
 output:
   base_dir: "data/ml_training"
   version: "v1.0"
 
 logging:
   level: "INFO"
-  file: null
+  file: "${dataset.tsv_construction.output.base_dir}/${dataset.tsv_construction.output.version}/construction_log.log"
   progress_interval: 100

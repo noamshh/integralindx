@@ -171,8 +171,8 @@
 
                     <h4 class="mt-4">Pipeline Overview</h4>
                     <p>
-                        IntegralIndx's dataset comprises <strong>26,730 integral instances</strong> organized into
-                        <strong>16,184 unique integrand groups</strong>, curated from over 206,000 Math StackExchange expressions.
+                        IntegralIndx's dataset comprises <strong>23,638 integral instances</strong> organized into
+                        <strong>12,337 unique integrand groups</strong>, curated from over 206,000 Math StackExchange expressions.
                         The data processing pipeline ensures mathematical correctness and consistency through multiple validation stages.
                     </p>
 
@@ -227,9 +227,9 @@
                             <ul class="mb-0">
                                 <li>Standardize integration variables (t, y, θ → x)</li>
                                 <li>Normalize unknown functions (f(x), g(x) → UNK_FUNC(x))</li>
-                                <li>Canonical parameter ordering (a, b, c → s, t, u)</li>
+                                <li>Canonical parameter ordering (a, b, c → alphabetical)</li>
                                 <li>Group by unique integrand hash for deduplication</li>
-                                <li><strong>Result: 16,184 unique integrand groups from 26,730 integral instances</strong></li>
+                                <li><strong>Result: 12,337 unique integrand groups from 23,638 integral instances</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -238,26 +238,26 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="stat-item">
-                                <div class="stat-number">26,730</div>
+                                <div class="stat-number">23,638</div>
                                 <div class="stat-label">Integral Instances</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-item">
-                                <div class="stat-number">16,184</div>
+                                <div class="stat-number">12,337</div>
                                 <div class="stat-label">Unique Integrands</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-item">
-                                <div class="stat-number">74.5%</div>
-                                <div class="stat-label">Definite Integrals</div>
+                                <div class="stat-number">206K</div>
+                                <div class="stat-label">Raw Expressions</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-item">
-                                <div class="stat-number">44.7%</div>
-                                <div class="stat-label">Acceptance Rate</div>
+                                <div class="stat-number">70</div>
+                                <div class="stat-label">Token Vocabulary</div>
                             </div>
                         </div>
                     </div>
@@ -314,6 +314,120 @@
                 </div>
             </div>
 
+            <!-- Section 3.5: Tokenization & Prefix Notation -->
+            <div class="theory-section mb-5" id="tokenization">
+                <h2 class="theory-section-header">Tokenization & Prefix Notation</h2>
+                <div class="theory-content">
+                    <p>
+                        Before a mathematical expression can be fed into the transformer model, it must be converted from its
+                        standard mathematical notation into a format the model can understand. This involves two key steps:
+                        <strong>conversion to prefix notation</strong> and <strong>tokenization</strong>. Both are crucial for
+                        making the model work with mathematical expressions in a structured, unambiguous way.
+                    </p>
+
+                    <h4 class="mt-4">Why Prefix Notation?</h4>
+                    <p>
+                        <strong>Prefix notation</strong> (also called <a href="https://en.wikipedia.org/wiki/Polish_notation" target="_blank">Polish notation</a>)
+                        is a mathematical notation where operators precede their operands. For example, the expression <code>2 + 3</code>
+                        becomes <code>+ 2 3</code> in prefix notation. This might seem unusual at first, but it has several critical advantages:
+                    </p>
+                    <ul>
+                        <li><strong>No operator precedence ambiguity:</strong> Unlike infix notation (<code>2 + 3 * 4</code>), prefix notation
+                            doesn't require parentheses or precedence rules. <code>+ 2 * 3 4</code> is unambiguous.</li>
+                        <li><strong>Tree-based representation:</strong> Prefix notation naturally corresponds to the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree" target="_blank">Abstract Syntax Tree (AST)</a>
+                            structure of expressions, making it ideal for symbolic computation.</li>
+                        <li><strong>Sequential parsing:</strong> The model can process tokens left-to-right in a single pass,
+                            which is perfect for transformer architectures.</li>
+                        <li><strong>E-Gen compatibility:</strong> The E-Gen e-graph system requires expressions in <a href="https://en.wikipedia.org/wiki/S-expression" target="_blank">S-expression</a>
+                            format (Lisp-style notation), which is essentially prefix notation with parentheses.</li>
+                    </ul>
+
+                    <h4 class="mt-4">From SymPy to Prefix to S-expressions</h4>
+                    <p>
+                        The conversion pipeline follows these steps:
+                    </p>
+                    <ol>
+                        <li><strong>SymPy parsing:</strong> User input → SymPy expression object (validated AST)</li>
+                        <li><strong>Prefix notation:</strong> SymPy AST → space-separated prefix tokens</li>
+                        <li><strong>S-expression:</strong> Prefix tokens → parenthesized Lisp-style notation (for E-Gen)</li>
+                    </ol>
+
+                    <div class="card bg-light p-3 mb-3">
+                        <strong>Example conversions:</strong><br>
+                        <code>SymPy: x**2 + sin(x)</code><br>
+                        <code>Prefix: add pow x 2 sin x</code><br>
+                        <code>S-expr: (+ (pow x 2) (sin x))</code><br>
+                        <br>
+                        <code>SymPy: log(x + 1) * a</code><br>
+                        <code>Prefix: mul log add x 1 a</code><br>
+                        <code>S-expr: (* (log (+ x 1)) a)</code>
+                    </div>
+
+                    <h4 class="mt-4">What are S-expressions?</h4>
+                    <p>
+                        <strong>S-expressions</strong> (<a href="https://en.wikipedia.org/wiki/S-expression" target="_blank">symbolic expressions</a>)
+                        are a notation for nested list data, originally from the Lisp programming language. They use parentheses to
+                        explicitly mark the boundaries of function applications. E-Gen's e-graph engine uses S-expressions internally
+                        because they provide a canonical, unambiguous representation perfect for applying rewrite rules during
+                        equality saturation.
+                    </p>
+
+                    <h4 class="mt-4">Tokenization: Fixed Vocabulary</h4>
+                    <p>
+                        Once in prefix notation, the expression is split into individual tokens. IntegralIndx uses a <strong>frozen vocabulary
+                        of exactly 70 tokens</strong>, carefully designed to cover the mathematical functions needed for integral expressions
+                        while remaining small enough for efficient transformer training.
+                    </p>
+
+                    <div class="card bg-light p-3 mb-3">
+                        <strong>Vocabulary breakdown (70 tokens total):</strong>
+                        <ul class="mb-0">
+                            <li><strong>Variables (4):</strong> <code>x</code> (integration variable), <code>a b c</code> (parameters)</li>
+                            <li><strong>Constants (14):</strong> <code>0-9</code> (digits), <code>pi e</code> (mathematical constants), <code>INT+ INT-</code> (multi-digit integers)</li>
+                            <li><strong>Operators (49):</strong>
+                                <ul>
+                                    <li>Basic: <code>add sub mul div pow sqrt</code></li>
+                                    <li>Trigonometric: <code>sin cos tan cot sec csc</code></li>
+                                    <li>Inverse trig: <code>asin acos atan acot asec acsc</code></li>
+                                    <li>Hyperbolic: <code>sinh cosh tanh coth sech csch</code></li>
+                                    <li>Inverse hyperbolic: <code>asinh acosh atanh acoth asech acsch</code></li>
+                                    <li>Other: <code>exp log abs Li zeta</code></li>
+                                </ul>
+                            </li>
+                            <li><strong>Special tokens (3):</strong> <code>PAD SOE EOE</code> (padding, start-of-expression, end-of-expression)</li>
+                        </ul>
+                    </div>
+
+                    <h4 class="mt-4">Variable Normalization</h4>
+                    <p>
+                        To maintain a fixed vocabulary, IntegralIndx performs <strong>variable normalization</strong> before tokenization:
+                    </p>
+                    <ul>
+                        <li><strong>Integration variable:</strong> Always normalized to <code>x</code>
+                            <br><small class="text-muted">Examples: ∫ f(t) dt → ∫ f(x) dx, ∫ g(y) dy → ∫ g(x) dx, ∫ h(θ) dθ → ∫ h(x) dx</small>
+                        </li>
+                        <li><strong>Parameters:</strong> Ordered alphabetically and renamed to <code>a, b, c</code> (maximum 3 parameters)
+                            <br><small class="text-muted">Examples: x^α → x^a, x^β*sin(x) → x^a*sin(x), x^γ*y^δ → x^a*x^b (after y→x)</small>
+                        </li>
+                        <li><strong>Function whitelist:</strong> Only expressions using the 49 supported operators are accepted</li>
+                    </ul>
+
+                    <div class="card bg-light p-3 mb-3">
+                        <strong>Complete example with variable normalization:</strong><br>
+                        <code>Original: ∫₀² y^α · sin(y) dy</code><br>
+                        <code>After normalization: ∫₀² x^a · sin(x) dx</code><br>
+                        <code>SymPy canonical: x**a * sin(x)</code><br>
+                        <code>Prefix notation: mul pow x a sin x</code><br>
+                        <code>Tokenized: [SOE, mul, pow, x, a, sin, x, EOE, PAD, PAD, ...]</code>
+                    </div>
+
+                    <p>
+                        This normalization ensures that mathematically equivalent integrals (differing only in variable names)
+                        map to identical token sequences, enabling the model to recognize their semantic similarity.
+                    </p>
+                </div>
+            </div>
+
             <!-- Section 4 -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Model Architecture</h2>
@@ -330,7 +444,7 @@
                             <li><strong>Encoder:</strong> 6-layer transformer (512 hidden dimensions, 8 attention heads, 0.1 dropout)</li>
                             <li><strong>Feedforward Dimension:</strong> 2048 (standard 4× expansion)</li>
                             <li><strong>Embedding Dimension:</strong> 512D (mean pooling over sequence)</li>
-                            <li><strong>Vocabulary:</strong> ~100 tokens (operators, functions, constants, variables)</li>
+                            <li><strong>Vocabulary:</strong> 70 tokens (see <a href="#tokenization">Tokenization section</a> for full breakdown)</li>
                             <li><strong>Positional Encoding:</strong> Sinusoidal positional embeddings</li>
                             <li><strong>Pooling Strategy:</strong> Mean pooling over token representations</li>
                         </ul>
@@ -362,6 +476,93 @@
                         <code>log(x + 1)</code> → <code>"log add x 1"</code><br>
                         <code>polylog(2, x)</code> → <code>"Li 2 x"</code>
                     </div>
+                </div>
+            </div>
+
+            <!-- Section 5: FAISS Similarity Search -->
+            <div class="theory-section mb-5">
+                <h2 class="theory-section-header">FAISS Similarity Search</h2>
+                <div class="theory-content">
+                    <p>
+                        Once the transformer model has generated 512-dimensional embeddings for all integrand groups in the database,
+                        the next challenge is efficient similarity search: given a query embedding, how do we quickly find the most
+                        similar integrands among thousands of candidates? This is where <strong>FAISS</strong> (Facebook AI Similarity Search)
+                        comes in.
+                    </p>
+
+                    <h4 class="mt-4">What is FAISS?</h4>
+                    <p>
+                        <a href="https://github.com/facebookresearch/faiss" target="_blank"><strong>FAISS</strong></a> is a library
+                        developed by Facebook AI Research for efficient similarity search and clustering of dense vectors. It's optimized
+                        for large-scale vector search operations and is widely used in recommendation systems, image retrieval, and
+                        natural language processing. FAISS provides both exact and approximate nearest neighbor search algorithms,
+                        with support for CPU and GPU acceleration.
+                    </p>
+
+                    <h4 class="mt-4">Index Type: IndexFlatIP</h4>
+                    <p>
+                        IntegralIndx uses <code>IndexFlatIP</code> (Flat Inner Product), which performs <strong>exact search</strong>
+                        using inner product (dot product) similarity. Here's why this design works:
+                    </p>
+                    <ul>
+                        <li><strong>L2 normalization:</strong> All embeddings are L2-normalized to unit length (||v|| = 1)</li>
+                        <li><strong>Cosine similarity via dot product:</strong> For normalized vectors, the dot product equals cosine similarity:
+                            <br><code>cos(θ) = (v₁ · v₂) / (||v₁|| ||v₂||) = v₁ · v₂</code> (when both are unit vectors)
+                        </li>
+                        <li><strong>Efficient computation:</strong> Inner product is computationally cheaper than explicit cosine calculation</li>
+                        <li><strong>No approximation:</strong> Flat index guarantees exact nearest neighbors (no false negatives)</li>
+                    </ul>
+
+                    <div class="card bg-light p-3 mb-3">
+                        <strong>Why L2 normalization?</strong>
+                        <p class="mb-0 mt-2">
+                            L2 normalization projects all vectors onto the unit hypersphere. In this space, <strong>cosine similarity</strong>
+                            (the angle between vectors) becomes equivalent to the <strong>dot product</strong>. This transformation allows
+                            us to use the efficient <code>IndexFlatIP</code> while measuring semantic similarity based on direction rather
+                            than magnitude. Expressions with similar mathematical structure will have embeddings pointing in similar directions,
+                            resulting in high cosine similarity.
+                        </p>
+                    </div>
+
+                    <h4 class="mt-4">Search Pipeline</h4>
+                    <p>
+                        When you submit a query integrand, the system performs the following steps:
+                    </p>
+                    <ol>
+                        <li><strong>Variable normalization:</strong> Query → normalize to <code>x, a, b, c</code> (same as training)</li>
+                        <li><strong>SymPy conversion:</strong> Normalized query → SymPy AST (validated syntax)</li>
+                        <li><strong>Prefix notation:</strong> SymPy AST → space-separated prefix tokens</li>
+                        <li><strong>Tokenization:</strong> Prefix tokens → token IDs using 70-token vocabulary</li>
+                        <li><strong>Embedding:</strong> Token IDs → 512D embedding vector (via transformer encoder)</li>
+                        <li><strong>L2 normalization:</strong> Embedding → unit vector (for cosine similarity)</li>
+                        <li><strong>FAISS search:</strong> Find top-k nearest neighbors using inner product</li>
+                        <li><strong>Result formatting:</strong> Return integrand groups with similarity scores</li>
+                    </ol>
+
+                    <div class="card bg-light p-3 mb-3">
+                        <strong>Example search:</strong><br>
+                        <code>Query: log(sin(x))</code><br>
+                        <code>↓ Prefix: log sin x</code><br>
+                        <code>↓ Embed: [0.023, -0.145, 0.089, ..., 0.201]</code> (512D)<br>
+                        <code>↓ Normalize: ||v|| = 1.0</code><br>
+                        <code>↓ FAISS search: k=6 nearest neighbors</code><br>
+                        <code>↓ Results: [log(sin(x)), log(cos(x)), sin(log(x)), ...]</code> with scores [0.95, 0.87, 0.79, ...]
+                    </div>
+
+                    <h4 class="mt-4">Performance Characteristics</h4>
+                    <ul>
+                        <li><strong>Index size:</strong> 12,337 vectors × 512 dimensions × 4 bytes = ~25 MB (fits in memory)</li>
+                        <li><strong>Search time:</strong> Flat index requires O(n) comparisons, but with n=12K this is <10ms on modern CPUs</li>
+                        <li><strong>Exact results:</strong> No approximation error (unlike IVF or HNSW indexes)</li>
+                        <li><strong>Trade-off:</strong> For larger datasets (100K+ vectors), approximate indexes like IVFFlat or HNSW would be faster</li>
+                    </ul>
+
+                    <p>
+                        The combination of contrastive learning, L2-normalized embeddings, and FAISS inner product search creates
+                        a powerful semantic similarity engine. Mathematically equivalent expressions (e.g., <code>sin²(x) + cos²(x)</code>
+                        and <code>1</code>) are pulled close together during training, and FAISS efficiently retrieves these neighbors
+                        at query time based on their angular proximity in the 512-dimensional embedding space.
+                    </p>
                 </div>
             </div>
 

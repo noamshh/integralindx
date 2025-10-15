@@ -8,8 +8,9 @@ import sympy as sp
 from omegaconf import OmegaConf
 
 from src.models.base_embedder import BaseEmbedder
-from src.models.egen.contrastive_model import MathEncoder
-from src.models.egen.tokenizer import MathTokenizer
+from src.models.egen.contrastive_model import Encoder
+from src.models.egen.tokenizer import Tokenizer
+from src.models.egen.vocab import get_vocab_size
 from src.utils.paths import get_paths
 from src.utils.prefix_notation import sympy_to_prefix
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 paths = get_paths()
 PROJECT_ROOT = paths['project_root']
 
-class ContrastiveLearningEmbedder(BaseEmbedder):
+class CLEmbedder(BaseEmbedder):
     def __init__(self, vocab_size: int, config_path: Optional[Path] = None, device: Optional[str] = None):
         """Args:
             vocab_size: vocabulary size (from tokenizer)
@@ -36,7 +37,7 @@ class ContrastiveLearningEmbedder(BaseEmbedder):
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = torch.device(device)
-        self.model = MathEncoder(
+        self.model = Encoder(
             vocab_size=vocab_size,
             dim=encoder_cfg.dim,
             num_layers=encoder_cfg.num_layers,
@@ -46,7 +47,7 @@ class ContrastiveLearningEmbedder(BaseEmbedder):
             dropout=encoder_cfg.dropout
         ).to(self.device)
 
-        self.tokenizer = MathTokenizer()
+        self.tokenizer = Tokenizer()
         logger.info(
             f"initialized contrastive embedder: {self.embedding_dim}D, "
             f"{encoder_cfg.num_layers}L, {encoder_cfg.num_heads}H, "
@@ -103,21 +104,33 @@ class ContrastiveLearningEmbedder(BaseEmbedder):
         logger.info(f"saved contrastive embedder to {path}")
 
     @classmethod
-    def load(cls, path: Path) -> 'ContrastiveLearningEmbedder':
+    def load(cls, path: Path, config_path: Optional[Path] = None) -> 'CLEmbedder':
+        """load embedder from checkpoint"""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"checkpoint not found: {path}")
         checkpoint = torch.load(path, map_location='cpu')
-        meta_path = path.with_suffix('.meta.json')
-        if meta_path.exists():
-            with open(meta_path) as f:
-                meta = json.load(f)
-            config_path = Path(meta['config_path'])
+        if config_path is None:
+            meta_path = path.with_suffix('.meta.json')
+            if meta_path.exists():
+                with open(meta_path) as f:
+                    meta = json.load(f)
+                config_path = Path(meta['config_path'])
+                logger.info(f"config loaded from .meta.json: {config_path}")
+            elif 'config_path' in checkpoint:
+                config_path = Path(checkpoint['config_path'])
+                logger.info(f"config loaded from checkpoint: {config_path}")
+            else:
+                raise ValueError(
+                    f"config_path not found in checkpoint or metadata. "
+                    f"Please specify explicitly via config_path parameter.\n"
+                    f"Example: embedder.load(checkpoint_path, config_path=Path('config/model/ii-cl-400k.yaml'))"
+                )
         else:
-            config_path = checkpoint.get('config_path', None)
-            if config_path:
-                config_path = Path(config_path)
-        vocab_size = checkpoint['vocab_size']
+            config_path = Path(config_path)
+            logger.info(f"using config: {config_path}")
+
+        vocab_size = get_vocab_size()
         embedder = cls(vocab_size=vocab_size, config_path=config_path)
         embedder.model.load_state_dict(checkpoint['model_state_dict'])
         logger.info(f"loaded contrastive embedder from {path}")

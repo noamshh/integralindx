@@ -11,11 +11,13 @@ egraph:
 output:
   equivalents_dir: "data/ml_training/equivalents_test"
   metadata_file: "equivalents_metadata.json"
+  failed_seeds_file: "failed_seeds.json"
 
 processing:
-  batch_size: 10
+  batch_size: 5
+  n_workers: 2
 
 logging:
   level: "INFO"
-  file: null
+  file: "data/ml_training/equivalents_test/generation_log.log"
   progress_interval: 1

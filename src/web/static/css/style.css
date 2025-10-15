@@ -490,6 +490,12 @@ code {
     top: 1.5rem;
     right: 1.5rem;
     z-index: 1000;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.theory-nav-badge.hidden {
+    transform: translateY(-100px);
+    opacity: 0;
+    pointer-events: none;
 }
 .theory-nav-badge a {
     display: inline-block;

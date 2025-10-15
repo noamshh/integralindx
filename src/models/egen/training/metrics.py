@@ -25,7 +25,7 @@ class AverageMeter:
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = np.where(self.count > 0, self.sum / self.count, self.sum)
+        self.avg = self.sum / self.count if self.count > 0 else 0
 
 
 class MetricsTracker:
@@ -63,7 +63,7 @@ class MetricsTracker:
         self.history['train_loss'].append(self.train_loss.avg)
         self.history['val_loss'].append(self.val_loss.avg)
         if self.learning_rate:
-            avg_lr = np.mean(self.learning_rate[-len(self.learning_rate):])
+            avg_lr = float(np.mean(self.learning_rate[-len(self.learning_rate):]))
             self.history['learning_rate'].append(avg_lr)
         else:
             self.history['learning_rate'].append(0.0)
@@ -89,12 +89,9 @@ def compute_gradient_norm(model: nn.Module) -> float:
     return total_norm
 
 
-def compute_embedding_quality(
-    query_embeddings: torch.Tensor,
-    positive_embeddings: torch.Tensor,
-    negative_embeddings: torch.Tensor,
-) -> Dict[str, float]:
-    """compute embedding quality metrics
+def compute_embedding_quality(query_embeddings: torch.Tensor, positive_embeddings: torch.Tensor,
+                              negative_embeddings: torch.Tensor) -> Dict[str, float]:
+    """Compute embedding quality metrics
     Args:
         query_embeddings: [B, D] query embeddings
         positive_embeddings: [B, D] positive (equivalent) embeddings

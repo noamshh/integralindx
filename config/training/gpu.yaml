@@ -18,10 +18,11 @@ criterion:
 
 training:
   batch_size: 256
-  n_epochs: 300
+  n_epochs: 10
   grad_clip_norm: 1.0
-  save_every_n_iters: 1000
+  save_every_n_iters: 25000
   log_every_n_iters: 100
+  validate_every_n_iters: 5000
   device: "cuda"
   num_workers: 4
 
@@ -31,8 +32,28 @@ checkpoints:
   save_best: true
   save_last: true
 
+visualization:
+  use_tensorboard: true
+  tensorboard_log_dir: "data/models/runs"
+  experiment_name: "${checkpoints.experiment}"
+  compute_embedding_quality: false
+  embedding_quality_every_n_iters: 1000
+
 dataset:
   train_tsv: "data/ml_training/${model.version}/train.tsv"
   val_tsv: "data/ml_training/${model.version}/val.tsv"
   test_tsv: "data/ml_training/${model.version}/test.tsv"
   max_seq_len: 128
+  in_memory: false
+
+evaluation:
+  enabled: true
+  warmup_iterations: 10000
+  tier1_every_n_iters: 5000
+  tier2_every_n_iters: 25000
+  tier3_every_n_iters: 50000
+  n_samples_tier2: 2000
+  n_viz_samples: 1000
+  eval_queries_path: "data/ml_training/eval_queries.json"
+  db_path: "data/integral.db"
+  seed: 42

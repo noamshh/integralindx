@@ -4,46 +4,13 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict
+import sympy as sp
 
 from src.utils.sexpression import prefix_to_sexp
 from src.models.egen.vocab import SEXP_TO_PREFIX
 
 logger = logging.getLogger(__name__)
 
-
-def _convert_integer_token(token: str) -> List[str]:
-    """convert E-Gen integer output to vocabulary format.
-
-    E-Gen outputs integers like: 0, 1, 2, ..., -1, -2, ...
-    Vocabulary expects: 0-9 (single digits), INT+ d1 d2 ... (positive), INT- d1 d2 ... (negative)
-
-    Args:
-        token: single token from E-Gen output
-
-    Returns:
-        list of tokens in vocabulary format"""
-    # check if token is an integer
-    try:
-        val = int(token)
-    except ValueError:
-        # not an integer, return as-is
-        return [token]
-
-    # single digit non-negative (0-9)
-    if 0 <= val <= 9:
-        return [token]
-
-    # multi-digit positive
-    if val > 9:
-        digits = list(str(val))
-        return ["INT+"] + digits
-
-    # negative
-    if val < 0:
-        digits = list(str(abs(val)))
-        return ["INT-"] + digits
-
-    return [token]
 
 @dataclass
 class EGenConfig:
@@ -80,7 +47,7 @@ def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = F
         ])
         logger.info(f"running E-Gen on {len(exprs)} expressions...")
         logger.info(f"command: {' '.join(cmd)}")
-        timeout = config.time_limit * len(exprs) + 60
+        timeout = config.time_limit * len(exprs) + 20
         logger.info(f"timeout: {timeout}s")
         result = subprocess.run(
             cmd,
@@ -90,6 +57,8 @@ def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = F
             check=False
         )
         logger.info(f"E-Gen completed with return code: {result.returncode}")
+        if result.stdout:
+            logger.info(f"stdout:\n{result.stdout.strip()}")
         if not output_path.exists():
             logger.error(f"E-Gen did not create output file: {output_path}")
             logger.error(f"stdout: {result.stdout}")
@@ -123,14 +92,12 @@ def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = F
             group_equivalents = []
             for equiv_line in equiv_lines:
                 tokens = equiv_line.split()
-                # convert S-expression operators to prefix notation
+                # convert sexp operators to prefix notation and numeric tokens to vocab format
                 converted_tokens = []
                 for token in tokens:
-                    # first try operator conversion (S-exp -> prefix)
                     prefix_token = SEXP_TO_PREFIX.get(token, token)
-                    # then convert integers to vocab format
-                    int_tokens = _convert_integer_token(prefix_token)
-                    converted_tokens.extend(int_tokens)
+                    numeric_tokens = _convert_numeric_token(prefix_token)
+                    converted_tokens.extend(numeric_tokens)
                 group_equivalents.append(' '.join(converted_tokens))
             results[expr] = group_equivalents
         logger.info(f"batch complete: generated equivalents for {len(results)}/{len(exprs)} expressions")
@@ -158,3 +125,29 @@ def generate_batch(exprs: List[str], config: EGenConfig, fail_on_error: bool = F
             output_path.unlink(missing_ok=True)
         except Exception:
             pass
+
+def _convert_numeric_token(token: str) -> List[str]:
+    try:
+        val = int(token)
+        if 0 <= val <= 9:
+            return [token]
+        if val > 9:
+            digits = list(str(val))
+            return ["INT+"] + digits
+        if val < 0:
+            digits = list(str(abs(val)))
+            return ["INT-"] + digits
+    except ValueError:
+        pass
+    try:
+        val = float(token)
+        rational = sp.nsimplify(val)
+        if isinstance(rational, sp.Rational):
+            numer_tokens = _convert_numeric_token(str(rational.p))
+            denom_tokens = _convert_numeric_token(str(rational.q))
+            return ["div"] + numer_tokens + denom_tokens
+        elif isinstance(rational, sp.Integer):
+            return _convert_numeric_token(str(int(rational)))
+    except (ValueError, AttributeError):
+        pass
+    return [token]

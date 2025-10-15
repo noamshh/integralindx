@@ -2,11 +2,11 @@ from typing import List
 from src.models.egen.vocab import CONSTANTS, VARIABLES, OPERATORS
 
 
-class MathTokenizer:
+class Tokenizer:
     """Core logic from E-Gen reference: https://github.com/hongbozheng/transformer/tokenizer.py"""
     def __init__(self):
         self.vocab = {}  # token -> id
-        self.id_to_token = {}  # id -> token
+        self.id_to_token = {}
         self.PAD_TOKEN = 'PAD'
         self.SOE_TOKEN = 'SOE'
         self.EOE_TOKEN = 'EOE'
@@ -42,10 +42,7 @@ class MathTokenizer:
         token_ids = [self.SOE_ID]
         for token in tokens:
             if token not in self.vocab:
-                raise ValueError(
-                    f"Unknown token '{token}' in expression. "
-                    f"All tokens must be in vocabulary (see vocab.py)"
-                )
+                raise ValueError(f"Unknown token '{token}' in expression, tokens must be in vocabulary (see vocab.py)")
             token_ids.append(self.vocab[token])
         token_ids.append(self.EOE_ID)
         if len(token_ids) > max_len:

@@ -30,7 +30,7 @@ ml_training:
 
 models:
   checkpoints: "data/models/checkpoints"
-  runs: "data/models/runs"  # tensorboard logs
+  runs: "data/models/runs"  # tensorboard
 
 egraph:
   binary: "bin/egen.exe"

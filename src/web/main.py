@@ -13,7 +13,7 @@ from src.utils.paths import get_paths
 from src.database.integral_db import IntegralDatabase
 from src.web.routers import search, system, groups, theory
 from src.models.baseline import BaselineEmbedder
-from src.models.egen.contrastive_embedder import ContrastiveLearningEmbedder
+from src.models.egen.contrastive_embedder import CLEmbedder
 from src.search.similarity_engine import IntegrandGroupSearch
 from src.search import embedding_cache
 
@@ -48,15 +48,16 @@ async def lifespan(app: FastAPI):
                 checkpoint_path = Path(cache_info.get('checkpoint_path'))
                 if not checkpoint_path.exists():
                     logger.error(f"checkpoint not found: {checkpoint_path}")
-                    logger.info("please rebuild cache with: python scripts/build_embedding_cache.py")
                     return
+                config_path_str = cache_info.get('config_path')
+                config_path = Path(config_path_str) if config_path_str else None
                 logger.info(f"loading E-Gen model from: {checkpoint_path}")
-                embedder = ContrastiveLearningEmbedder.load(checkpoint_path)
+                embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
             search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder)
             logger.info(f"search engine loaded from cache: {len(search_engine.groups)} groups")
         else:
             logger.warning(f"embedding cache not found: {embedder_name}")
-            logger.info("building index from scratch (this may take a while)...")
+            logger.info("building index...")
             logger.info(f"tip: pre-build cache with: python scripts/build_embedding_cache.py --embedder {embedder_name}")
             all_groups = database.get_all_groups(limit=20000, exclude_curated=True)
             if is_baseline:
@@ -67,15 +68,16 @@ async def lifespan(app: FastAPI):
                     embedder.fit([g.integrand_canonical for g in all_groups])
                 metadata = {'embedder_type': 'baseline', 'method': embedder_name}
             else:
-                checkpoint_path = paths['data']['root'] / 'models' / 'egen' / embedder_name / 'best_model.pt'
+                checkpoint_path = paths['models']['checkpoints'] / embedder_name / 'best_model.pt'
                 if not checkpoint_path.exists():
                     logger.error(f"checkpoint not found: {checkpoint_path}")
-                    logger.info("please train model first or pre-build cache")
                     return
+                config_path = paths['project_root'] / 'config' / 'model' / 'ii-cl-19m.yaml'
                 logger.info(f"loading E-Gen model from: {checkpoint_path}")
-                embedder = ContrastiveLearningEmbedder.load(checkpoint_path)
+                logger.info(f"using default config: {config_path}")
+                embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
                 embedding_dim = embedder.embedding_dim
-                metadata = {'embedder_type': 'egen', 'checkpoint_path': str(checkpoint_path)}
+                metadata = {'embedder_type': 'egen', 'checkpoint_path': str(checkpoint_path), 'config_path': str(config_path)}
             search_engine = IntegrandGroupSearch(embedding_dim=embedding_dim, index_type='flat')
             search_engine.groups = all_groups
             for idx, group in enumerate(all_groups):
@@ -100,12 +102,8 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("shutting down...")
 
-app = FastAPI(
-    title="IntegralIndx - Integral Similarity Search",
-    description="Search through Math StackExchange integrals",
-    version="1.0.0",
-    lifespan=lifespan
-)
+app = FastAPI(title="IntegralIndx - Integral Similarity Search", description="Search through Math StackExchange integrals",
+              version="1.0.0", lifespan=lifespan)
 
 app.include_router(system.router, tags=["system"])
 app.include_router(search.router, tags=["search"])

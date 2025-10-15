@@ -12,7 +12,7 @@ from corpus.formula_models import IntegralFormula
 LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 def load_integrals(path: Path, logger: logging.Logger) -> List[IntegralFormula]:
-    """Load integral formulas from input JSONL file"""
+    """Load integral formulas from input jsonl file"""
     integrals = []
     if not path.exists():
         logger.error(f"File not found: {path}")
@@ -63,7 +63,9 @@ class EGenPipelineConfig:
     egraph_time_limit: int
     output_equivalents_dir: Path
     output_metadata_file: str
+    output_failed_seeds_file: str
     batch_size: int
+    n_workers: int | None
     log_level: str
     log_file: Path | None
     progress_interval: int
@@ -82,7 +84,9 @@ def load_egen_pipeline_config(cfg: DictConfig) -> EGenPipelineConfig:
         egraph_time_limit=ds.egraph.time_limit,
         output_equivalents_dir=project_root / ds.output.equivalents_dir,
         output_metadata_file=ds.output.metadata_file,
+        output_failed_seeds_file=ds.output.failed_seeds_file,
         batch_size=ds.processing.batch_size,
+        n_workers=ds.processing.get('n_workers', None),
         log_level=ds.logging.level,
         log_file=project_root / ds.logging.file if ds.logging.file else None,
         progress_interval=ds.logging.progress_interval
@@ -98,6 +102,8 @@ class TSVPipelineConfig:
     val_ratio: float
     test_ratio: float
     random_seed: int
+    large_cluster_threshold: int
+    max_positives_per_query: int
     output_base_dir: Path
     output_version: str
     log_level: str
@@ -117,6 +123,8 @@ def load_tsv_pipeline_config(cfg: DictConfig) -> TSVPipelineConfig:
         val_ratio=ds.splits.val,
         test_ratio=ds.splits.test,
         random_seed=ds.splits.random_seed,
+        large_cluster_threshold=ds.sampling.large_cluster_threshold,
+        max_positives_per_query=ds.sampling.max_positives_per_query,
         output_base_dir=project_root / ds.output.base_dir,
         output_version=ds.output.version,
         log_level=ds.logging.level,

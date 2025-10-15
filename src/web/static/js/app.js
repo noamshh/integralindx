@@ -106,7 +106,6 @@ class IntegralSearchApp {
     }
 
     async loadMoreResults() {
-        // Increase k to 18 and re-run search
         this.currentK = 18;
         await this.performSearch(false); // false = not a new search
     }
@@ -135,8 +134,15 @@ class IntegralSearchApp {
         }
         resultsSection.classList.remove('d-none');
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (window.MathJax) {
-            MathJax.typesetPromise([resultsContainer]).catch(console.error);
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise([resultsContainer]).catch(() => {
+            });
+        } else if (window.MathJax) {
+            window.MathJax.startup?.promise?.then(() => {
+                if (typeof MathJax.typesetPromise === 'function') {
+                    MathJax.typesetPromise([resultsContainer]).catch(() => {});
+                }
+            });
         }
     }
 
@@ -194,24 +200,9 @@ class IntegralSearchApp {
     }
 
     getSimilarityClass(score) {
-        if (score > 0.8) return 'high-similarity';
+        if (score > 0.85) return 'high-similarity';
         if (score > 0.6) return 'medium-similarity';
         return 'low-similarity';
-    }
-    async searchById(integralId) {
-        try {
-            const response = await fetch(`/search_by_id/${integralId}?k=5`);
-            const result = await response.json();
-            
-            if (result.success && result.similar_integrals) {
-                this.displayResults(
-                    result.query_integral?.latex || 'Selected integral',
-                    result.similar_integrals
-                );
-            }
-        } catch (error) {
-            console.error('Search by ID error:', error);
-        }
     }
 
     setLoadingState(loading) {
@@ -289,7 +280,6 @@ class IntegralSearchApp {
     }
 }
 
-// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new IntegralSearchApp();
 });

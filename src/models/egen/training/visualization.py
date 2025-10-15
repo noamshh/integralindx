@@ -6,16 +6,13 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.manifold import TSNE
+
 
 logger = logging.getLogger(__name__)
 
 class TensorBoardLogger:
     def __init__(self, log_dir: Path, experiment_name: str):
-        """
-        Args:
-            log_dir: base directory for logs (e.g., data/models/runs/)
-            experiment_name: name of experiment
-        """
         self.log_dir = Path(log_dir) / experiment_name / 'tensorboard'
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=str(self.log_dir))
@@ -51,11 +48,7 @@ class TensorBoardLogger:
 
 
 def plot_training_curves(stats_file: Path, output_dir: Path, show_lr: bool = True):
-    """plot training and validation loss curves from stats.json
-    Args:
-        stats_file: path to stats.json file
-        output_dir: directory to save plots
-        show_lr: include learning rate subplot"""
+    """plot training and validation loss curves from stats.json"""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     with open(stats_file) as f:
@@ -104,33 +97,19 @@ def plot_training_curves(stats_file: Path, output_dir: Path, show_lr: bool = Tru
 
 def plot_embedding_space(embeddings: np.ndarray, labels: Optional[List[str]] = None, output_path: Optional[Path] = None,
                          method: str = 'tsne', perplexity: int = 30, n_components: int = 2):
-    """visualize embedding space
+    """Visualize embedding space
     Args:
         embeddings: [N, D] embedding vectors
         labels: list of N labels
         output_path: path to save plot
-        method: 'tsne' or 'umap'
-        perplexity: t-SNE perplexity parameter
+        method: 'tsne'
+        perplexity: t-SNE perplexity
         n_components: dimensionality (2 or 3)"""
     if method == 'tsne':
-        try:
-            from sklearn.manifold import TSNE
-            reducer = TSNE(n_components=n_components, perplexity=perplexity, random_state=42)
-            embeddings_2d = reducer.fit_transform(embeddings)
-        except ImportError:
-            logger.error("scikit-learn required for t-SNE, install with: pip install scikit-learn")
-            return
-    elif method == 'umap':
-        try:
-            import umap
-            reducer = umap.UMAP(n_components=n_components, random_state=42)
-            embeddings_2d = reducer.fit_transform(embeddings)
-        except ImportError:
-            logger.error("umap-learn required for UMAP, install with: pip install umap-learn")
-            return
+        reducer = TSNE(n_components=n_components, perplexity=perplexity, random_state=42)
+        embeddings_2d = reducer.fit_transform(embeddings)
     else:
-        raise ValueError(f"unknown method: {method}, choose 'tsne' or 'umap'")
-
+        raise ValueError(f"unknown method: {method}, currently supports only: 'tsne'")
     fig, ax = plt.subplots(figsize=(10, 8))
     if labels is None:
         ax.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], alpha=0.6, s=10)

@@ -16,13 +16,13 @@
                     </a>
                     <p class="lead">Find similar integrals using E-Gen embeddings</p>
                     <p class="text-muted">
-                        Browse 12,337 unique integrands, extracted from 23,638 <a href="https://math.stackexchange.com" target="_blank" class="text-muted text-decoration-none">MathStackExchange</a> integrals
+                        Browse 12,337 unique integrands from 23,638 <a href="https://math.stackexchange.com" target="_blank" class="text-muted text-decoration-none">MathStackExchange</a> integrals
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- Search Form -->
+        <!-- Search -->
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="search-card">
@@ -53,7 +53,7 @@
             </div>
         </div>
 
-        <!-- About Section -->
+        <!-- About -->
         <div class="row justify-content-center mt-4">
             <div class="col-md-8">
                 <div class="about-card">
@@ -93,7 +93,7 @@
             </div>
         </div>
 
-        <!-- Results Section -->
+        <!-- Results -->
         <div class="row justify-content-center mt-4">
             <div class="col-md-10">
                 <div id="resultsSection" class="d-none">
@@ -141,9 +141,28 @@ function toggleAbout() {
         toggle.textContent = '▼';
     }
 }
-// Start collapsed
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('aboutContent').style.display = 'none';
+    // Auto-hide theory button
+    const theoryBadge = document.querySelector('.theory-nav-badge');
+    if (theoryBadge) {
+        let lastScrollTop = 0;
+        const scrollThreshold = 50;
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > scrollThreshold) {
+                if (scrollTop > lastScrollTop) {
+                    theoryBadge.classList.add('hidden');
+                } else {
+                    theoryBadge.classList.remove('hidden');
+                }
+            } else {
+                theoryBadge.classList.remove('hidden');
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, { passive: true });
+    }
 });
 </script>
 {% endblock %}

@@ -21,7 +21,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class MathEncoder(nn.Module):
+class Encoder(nn.Module):
     def __init__(
         self,
         vocab_size: int,
@@ -40,11 +40,12 @@ class MathEncoder(nn.Module):
             num_heads: number of attention heads
             feedforward_dim: feedforward dimension
             max_seq_len: maximum sequence length
-            dropout: dropout probability
+            dropout: dropout
         """
         super().__init__()
         self.dim = dim
         self.vocab_size = vocab_size
+        self.max_seq_len = max_seq_len
         self.token_emb = nn.Embedding(vocab_size, dim)
         self.pos_emb = PositionalEncoding(max_seq_len, dim, dropout)
         encoder_layer = nn.TransformerEncoderLayer(

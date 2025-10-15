@@ -3,19 +3,21 @@ data:
 
 egraph:
   binary_path: "bin/egen.exe"
-  n_equivalents: 40
-  token_limit: 12
-  max_token_limit: 12
-  time_limit: 500
+  n_equivalents: 30
+  token_limit: 10
+  max_token_limit: 10
+  time_limit: 400
 
 output:
   equivalents_dir: "data/ml_training/equivalents"
   metadata_file: "equivalents_metadata.json"
+  failed_seeds_file: "failed_seeds.json"
 
 processing:
-  batch_size: 100
+  batch_size: 10
+  n_workers: null  # cpu count
 
 logging:
   level: "INFO"
-  file: null
+  file: "data/ml_training/equivalents/generation_log.log"
   progress_interval: 10

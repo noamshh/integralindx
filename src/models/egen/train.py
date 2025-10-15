@@ -1,24 +1,24 @@
-import logging
 import hydra
 import torch
 from pathlib import Path
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader
 
-from src.models.egen.contrastive_model import MathEncoder
+from src.models.egen.contrastive_model import Encoder
 from src.models.egen.datasets.contrastive_dataset import ContrastiveDataset
-from src.models.egen.tokenizer import MathTokenizer
+from src.models.egen.tokenizer import Tokenizer
 from src.models.egen.training.losses import build_criterion
-from src.models.egen.training.trainer import ContrastiveTrainer
-from src.models.egen.training.checkpointing import load_checkpoint, get_latest_checkpoint
+from src.models.egen.training.trainer import CLTrainer
+from src.models.egen.training.checkpointing import resume_training_from_checkpoint
 from src.models.egen.training.optimization import build_optimizer, build_scheduler
 from src.models.egen.training.logger import TrainingLogger, setup_logging
+from src.models.egen.training.evaluation import EvaluationManager
 from src.utils.paths import get_paths
 
 
-def build_model(model_cfg: DictConfig, vocab_size: int, device: torch.device, logger: TrainingLogger) -> MathEncoder:
+def build_model(model_cfg: DictConfig, vocab_size: int, device: torch.device, logger: TrainingLogger) -> Encoder:
     encoder_cfg = model_cfg.encoder
-    model = MathEncoder(
+    model = Encoder(
         vocab_size=vocab_size,
         dim=encoder_cfg.dim,
         num_layers=encoder_cfg.num_layers,
@@ -57,24 +57,29 @@ def main(cfg: DictConfig) -> None:
 
     # tokenizer
     train_logger.info("initializing tokenizer...")
-    tokenizer = MathTokenizer()
+    tokenizer = Tokenizer()
     vocab_size = len(tokenizer.vocab)
     train_logger.info(f"vocabulary size: {vocab_size}")
 
     # datasets
     train_logger.info("loading datasets...")
     dataset_cfg = cfg.training.dataset
+    in_memory = dataset_cfg.get('in_memory', False)
+    train_logger.info(f"dataset loading mode: 'in-memory'={in_memory}")
+
     train_dataset = ContrastiveDataset(
         tsv_path=dataset_cfg.train_tsv,
         tokenizer=tokenizer,
-        max_seq_len=dataset_cfg.max_seq_len
+        max_seq_len=dataset_cfg.max_seq_len,
+        in_memory=in_memory
     )
     train_logger.info(f"training examples: {len(train_dataset)}")
 
     val_dataset = ContrastiveDataset(
         tsv_path=dataset_cfg.val_tsv,
         tokenizer=tokenizer,
-        max_seq_len=dataset_cfg.max_seq_len
+        max_seq_len=dataset_cfg.max_seq_len,
+        in_memory=in_memory
     )
     train_logger.info(f"validation examples: {len(val_dataset)}")
 
@@ -110,25 +115,36 @@ def main(cfg: DictConfig) -> None:
         num_epochs=cfg.training.training.n_epochs
     )
 
-    # check for resume flag in command line
-    start_epoch = 1
-    latest_checkpoint = get_latest_checkpoint(checkpoint_dir)
-    if latest_checkpoint and latest_checkpoint.exists():
-        train_logger.info(f"found checkpoint: {latest_checkpoint}")
-        train_logger.info("resuming from checkpoint...")
-        checkpoint = load_checkpoint(
-            checkpoint_path=latest_checkpoint,
-            model=model,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            device=device
+    # resume from checkpoint
+    resume_state = resume_training_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        device=device,
+        train_logger=train_logger
+    )
+    start_epoch = resume_state['start_epoch']
+    checkpoint_loaded = resume_state['checkpoint_loaded']
+    resume_best_val_loss = resume_state['best_val_loss']
+
+    # evaluation manager
+    evaluation_manager = None
+    if hasattr(cfg.training, 'evaluation') and cfg.training.evaluation.get('enabled', False):
+        train_logger.info("initializing evaluation manager...")
+        evaluation_manager = EvaluationManager.from_config(
+            eval_cfg=OmegaConf.to_container(cfg.training.evaluation),
+            tokenizer=tokenizer,
+            embedding_dim=cfg.model.encoder.dim,
+            checkpoint_dir=checkpoint_dir,
         )
-        start_epoch = checkpoint.get('epoch', 0) + 1
-        train_logger.info(f"resuming from epoch {start_epoch}")
+        train_logger.info("evaluation manager initialized successfully")
 
     # trainer
     train_logger.info("initializing trainer...")
-    trainer = ContrastiveTrainer(
+    viz_cfg = cfg.training.visualization
+    config_path = paths['project_root'] / 'config' / 'model' / f"{cfg.model.name}.yaml"
+    trainer = CLTrainer(
         model=model,
         criterion=criterion,
         optimizer=optimizer,
@@ -140,8 +156,23 @@ def main(cfg: DictConfig) -> None:
         checkpoint_dir=checkpoint_dir,
         grad_clip_norm=cfg.training.training.grad_clip_norm,
         save_every_n_iters=cfg.training.training.save_every_n_iters,
-        log_every_n_iters=cfg.training.training.log_every_n_iters
+        log_every_n_iters=cfg.training.training.log_every_n_iters,
+        validate_every_n_iters=cfg.training.training.get('validate_every_n_iters', 0),
+        use_tensorboard=viz_cfg.use_tensorboard,
+        tensorboard_log_dir=Path(viz_cfg.tensorboard_log_dir) if viz_cfg.tensorboard_log_dir else None,
+        experiment_name=experiment_name,
+        compute_emb_quality=viz_cfg.compute_embedding_quality,
+        emb_quality_every_n_iters=viz_cfg.embedding_quality_every_n_iters,
+        vocab_size=vocab_size,
+        config_path=config_path,
+        evaluation_manager=evaluation_manager,
     )
+
+    # restore state from checkpoint
+    if checkpoint_loaded:
+        trainer.best_val_loss = resume_best_val_loss
+        train_logger.info(f"restored trainer state: best_val_loss={resume_best_val_loss}")
+
     # train
     trainer.train(
         num_epochs=cfg.training.training.n_epochs,
