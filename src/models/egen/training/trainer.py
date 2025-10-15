@@ -200,7 +200,7 @@ class CLTrainer:
 
             # training-time evaluation
             if self.evaluation_manager is not None:
-                self.evaluation_manager.run_evaluation_hooks(
+                self.evaluation_manager.run_evaluation(
                     model=self.model,
                     device=self.device,
                     iteration=self.global_iteration,

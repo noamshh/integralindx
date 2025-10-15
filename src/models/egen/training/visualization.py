@@ -1,5 +1,4 @@
 import json
-import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 import numpy as np
@@ -9,14 +8,11 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.manifold import TSNE
 
 
-logger = logging.getLogger(__name__)
-
 class TensorBoardLogger:
     def __init__(self, log_dir: Path, experiment_name: str):
         self.log_dir = Path(log_dir) / experiment_name / 'tensorboard'
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=str(self.log_dir))
-        logger.info(f"tensorboard logs: {self.log_dir}")
 
     def log_scalar(self, tag: str, value: float, step: int):
         self.writer.add_scalar(tag, value, step)
@@ -92,7 +88,6 @@ def plot_training_curves(stats_file: Path, output_dir: Path, show_lr: bool = Tru
     plot_path = output_dir / 'training_curves.png'
     plt.savefig(plot_path, dpi=150)
     plt.close()
-    logger.info(f"saved training curves to {plot_path}")
 
 
 def plot_embedding_space(embeddings: np.ndarray, labels: Optional[List[str]] = None, output_path: Optional[Path] = None,
@@ -126,7 +121,6 @@ def plot_embedding_space(embeddings: np.ndarray, labels: Optional[List[str]] = N
     ax.grid(True, alpha=0.3)
     if output_path:
         plt.savefig(output_path, dpi=150)
-        logger.info(f"saved embedding plot to {output_path}")
     else:
         plt.show()
     plt.close()

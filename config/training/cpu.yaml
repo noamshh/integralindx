@@ -53,6 +53,7 @@ evaluation:
   tier3_every_n_iters: 1000
   n_samples_tier2: 500
   n_viz_samples: 200
-  eval_queries_path: "data/ml_training/eval_queries.json"
+  topk_queries_path: "data/eval/topk_queries.json"
+  analogy_queries_path: "data/eval/analogy_queries.json"
   db_path: "data/integral.db"
   seed: 42
