@@ -26,9 +26,13 @@ def normalize_sympy_expression(sympy_expr: str) -> Optional[str]:
         integrand_vars = extract_variables_from_expression(stringified)
         if not integrand_vars:
             return stringified
-        # assume last alphabetically is the integration variable
-        sorted_vars = sorted(integrand_vars)
-        integration_var = sorted_vars[-1] if sorted_vars else None
+        CANONICAL_PARAMS = {'a', 'b', 'c'}
+        integration_var_candidates = integrand_vars - CANONICAL_PARAMS
+        if not integration_var_candidates:
+            return stringified
+        # pick last alphabetically from non-param variables as integration var
+        sorted_candidates = sorted(integration_var_candidates)
+        integration_var = sorted_candidates[-1] if sorted_candidates else None
         var_mapping = create_variable_mapping(integration_var, integrand_vars)
         if var_mapping:
             normalized = normalize_expression_variables(stringified, var_mapping, debug=False)
@@ -48,12 +52,16 @@ def parse_query_to_sympy_integrand(query: str) -> Tuple[Optional[str], str]:
         stringified = str(parsed)
         integrand_vars = extract_variables_from_expression(stringified)
         if integrand_vars:
-            sorted_vars = sorted(integrand_vars)
-            integration_var = sorted_vars[-1] if sorted_vars else 'x'
+            CANONICAL_PARAMS = {'a', 'b', 'c'}
+            integration_var_candidates = integrand_vars - CANONICAL_PARAMS
+            if not integration_var_candidates:
+                integration_var = 'x'
+            else:
+                sorted_candidates = sorted(integration_var_candidates)
+                integration_var = sorted_candidates[-1] if sorted_candidates else 'x'
             is_valid, reason, params = validate_parsed_symbols(stringified, integration_var, debug=False)
             if not is_valid:
                 return None, f'invalid expression: {reason}'
-
         normalized = with_timeout(normalize_sympy_expression, timeout_seconds=2)(query)
         if normalized is None:
             return None, f'failed to parse sympy expression: {query}'

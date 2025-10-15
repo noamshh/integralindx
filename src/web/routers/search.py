@@ -98,7 +98,6 @@ async def search_similar_integrands(query: MathQuery):
         )
     except Exception as e:
         logger.error(f"search failed: {e}")
-        # sanitize error message in non-dev mode
         error_msg = f"search failed: {str(e)}" if dev_mode else "Invalid expression"
         return SimilarityResult(
             query=query.query,
