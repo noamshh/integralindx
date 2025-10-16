@@ -88,6 +88,12 @@ async def search_similar_integrands(query: MathQuery):
             )
         k = min(max(query.k, 1), 20)
         results = search_engine.search(sympy_integrand, k=k, embedder=embedder)
+
+        logger.info(
+            f"SEARCH | query='{query.query}' | parsed='{sympy_integrand}' | "
+            f"embedder={embedder_name} | results={len(results)} | k={k}"
+        )
+
         return SimilarityResult(
             query=query.query,
             parsed_query=sympy_integrand,

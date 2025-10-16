@@ -48,9 +48,9 @@ dataset:
 evaluation:
   enabled: true
   warmup_iterations: 0
-  tier1_every_n_iters: 300
-  tier2_every_n_iters: 500
-  tier3_every_n_iters: 1000
+  tier1_every_n_iters: 10
+  tier2_every_n_iters: 20
+  tier3_every_n_iters: 30
   n_samples_tier2: 500
   n_viz_samples: 200
   topk_queries_path: "data/eval/topk_queries.json"

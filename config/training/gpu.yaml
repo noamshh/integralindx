@@ -8,7 +8,7 @@ optimizer:
 
 scheduler:
   name: "cosine"
-  warmup_epochs: 5
+  warmup_epochs: 1
   min_lr: 1.0e-6
 
 criterion:
@@ -18,13 +18,13 @@ criterion:
 
 training:
   batch_size: 256
-  n_epochs: 10
+  n_epochs: 4
   grad_clip_norm: 1.0
   save_every_n_iters: 25000
   log_every_n_iters: 100
-  validate_every_n_iters: 5000
+  validate_every_n_iters: 10000
   device: "cuda"
-  num_workers: 4
+  num_workers: 8
 
 checkpoints:
   dir: "data/models/checkpoints"
@@ -51,7 +51,7 @@ evaluation:
   warmup_iterations: 10000
   tier1_every_n_iters: 5000
   tier2_every_n_iters: 25000
-  tier3_every_n_iters: 50000
+  tier3_every_n_iters: 100000
   n_samples_tier2: 2000
   n_viz_samples: 1000
   topk_queries_path: "data/eval/topk_queries.json"
