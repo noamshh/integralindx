@@ -15,10 +15,6 @@ class MSENormalizer:
         pass
 
     def normalize_latex(self, raw: str, source_id: str) -> List[NormalizedFormula]:
-        """
-        Normalize LaTeX formula(s), handling multiple statements.
-        Returns a list of NormalizedFormula objects - one per mathematical statement.
-        """
         if not raw:
             return [NormalizedFormula.rejected(source_id, raw, "empty")]
         raw = html.unescape(raw)

@@ -1,5 +1,6 @@
 import logging
 import json
+import os, glob, yaml
 from pathlib import Path
 from typing import List
 from omegaconf import DictConfig
@@ -10,6 +11,33 @@ from corpus.formula_models import IntegralFormula
 
 
 LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+
+
+def load_yaml_configs(config_dir):
+    configs = []
+    for file_path in glob.glob(os.path.join(config_dir, '*.yaml')):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            doc = yaml.safe_load(f)
+            if doc:
+                configs.append(doc)
+    return configs
+
+
+def load_existing_checksums(jsonl_path: Path) -> set:
+    s = set()
+    if not jsonl_path.exists():
+        return s
+    with jsonl_path.open('r', encoding='utf-8') as fh:
+        for line in fh:
+            try:
+                obj = json.loads(line)
+                if obj.get("checksum"):
+                    s.add(obj["checksum"])
+            except Exception:
+                continue
+    return s
+
 
 def load_integrals(path: Path, logger: logging.Logger) -> List[IntegralFormula]:
     """Load integral formulas from input jsonl file"""
@@ -146,3 +174,4 @@ def load_seeds(path: Path, logger: logging.Logger) -> List[str]:
             seeds.append(line)
     logger.info(f"loaded {len(seeds)} seeds from {path}")
     return seeds
+

@@ -88,7 +88,7 @@ class SymPyIntegralFilter:
                         continue
                 # rejected
                 if self.debug:
-                    logger.debug(f"LaTeX rejection: {reason} (matched: {match.group() if hasattr(match, 'group') else 'N/A'})")
+                    logger.debug(f"latex rejection: {reason} (matched: {match.group() if hasattr(match, 'group') else 'N/A'})")
                 return True, f"latex_rejected: {reason}"
         return False, None
 
@@ -114,7 +114,7 @@ class SymPyIntegralFilter:
                         return True
             return False
         except Exception as e:
-            logger.warning(f"Error in has_integral_pattern_fast: {e}")
+            logger.warning(f"error in has_integral_pattern_fast: {e}")
             return False
 
     def is_1d_integral(self, latex: str) -> bool:
@@ -138,13 +138,13 @@ class SymPyIntegralFilter:
         try:
             cleaned = self.clean_latex(latex)
             if self.debug:
-                logger.debug(f"Parsing LaTeX: {cleaned[:100]}...")
+                logger.debug(f"parsing latex: {cleaned[:100]}...")
             # early rejection
             should_reject, rejection_reason = self.should_reject_by_latex(cleaned)
             if should_reject:
                 result['parsing_error'] = rejection_reason
                 if self.debug:
-                    logger.debug(f"Early LaTeX rejection: {rejection_reason}")
+                    logger.debug(f"early latex rejection: {rejection_reason}")
                 return result
             # use timeout wrapper to prevent hangs
             try:
@@ -221,10 +221,10 @@ class SymPyIntegralFilter:
             # skip problematic parses
             if parse_time > 3.0 or not sympy_result['parsing_success']:
                 if 'timeout' in (sympy_result.get('parsing_error') or ''):
-                    logger.warning(f"Formula #{formula_num} REJECTED due to timeout after {parse_time:.3f}s: {cleaned_expr[:200]}...")
+                    logger.warning(f"formula #{formula_num} REJECTED due to timeout after {parse_time:.3f}s: {cleaned_expr[:200]}...")
                     continue
                 elif parse_time > 3.0:
-                    logger.warning(f"Formula #{formula_num} took {parse_time:.3f}s to parse, skipping: {cleaned_expr[:200]}...")
+                    logger.warning(f"formula #{formula_num} took {parse_time:.3f}s to parse, skipping: {cleaned_expr[:200]}...")
                     continue
             if sympy_result['parsing_success']:
                 # symbol validation
@@ -235,7 +235,7 @@ class SymPyIntegralFilter:
                 )
                 if not is_valid:
                     if self.debug:
-                        logger.debug(f"Symbol validation failed: {rejection_reason}")
+                        logger.debug(f"symbol validation failed: {rejection_reason}")
                     continue
                 equivalent_forms = []
                 if _contains_multiple_integrals(original_expr):
@@ -256,18 +256,14 @@ class SymPyIntegralFilter:
                 integral_formulas.append(integral_formula)
         return integral_formulas
 
-    def filter_formulas_streaming(self, input_file: str, output_file: str, processed_ids: set = None,
-                                 force_reprocess: bool = False, limit: Optional[int] = None,
-                                 existing_integral_count: int = 0, start_line: int = 0) -> Dict[str, int]:
-        """Stream-process formulas with ID-based deduplication and early integral filtering
-        Args:
-            start_line: Skip first N lines of input file
-        """
+    def filter_formulas(self, input_file: str, output_file: str, processed_ids: set = None,
+                        force_reprocess: bool = False, limit: Optional[int] = None,
+                        existing_integral_count: int = 0, start_line: int = 0) -> Dict[str, int]:
         # load blob path mapping for author extraction
         from corpus.scripts.blob_parser import load_raw_formula_blob_paths
-        logger.info("Loading blob paths for author extraction...")
+        logger.info("loading blob paths for author extraction...")
         blob_map = load_raw_formula_blob_paths()
-        logger.info(f"Loaded {len(blob_map):,} blob paths")
+        logger.info(f"loaded {len(blob_map):,} blob paths")
 
         processed_ids = processed_ids or set()
         stats = {
@@ -279,10 +275,10 @@ class SymPyIntegralFilter:
             'sympy_failures': 0,
             'processing_errors': 0
         }
-        # count total lines for progress reporting
+        # count total lines for progress
         total_lines = 0
         if self.progress:
-            logger.info("Counting total formulas...")
+            logger.info("counting total formulas...")
             with open(input_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     if line.strip():
@@ -292,9 +288,9 @@ class SymPyIntegralFilter:
             if limit:
                 effective_total = min(effective_total, limit)
             if start_line > 0:
-                logger.info(f"Found {total_lines:,} total formulas, starting from line {start_line+1:,}, processing {effective_total:,}")
+                logger.info(f"found {total_lines:,} total formulas, starting from line {start_line+1:,}, processing {effective_total:,}")
             else:
-                logger.info(f"Found {total_lines:,} total formulas{f', processing {effective_total:,}' if limit else ''}")
+                logger.info(f"found {total_lines:,} total formulas{f', processing {effective_total:,}' if limit else ''}")
         start_time = time.time()
         output_dir = Path(output_file).parent
         stats_file = output_dir / "filter_stats.json"
@@ -314,7 +310,7 @@ class SymPyIntegralFilter:
                             formula = NormalizedFormula.from_dict(data)
                         except Exception as e:
                             stats['processing_errors'] += 1
-                            logger.warning(f"Error parsing formula from line {line_num}: {e}")
+                            logger.warning(f"error parsing formula from line {line_num}: {e}")
                             continue
                         stats['total_formulas'] += 1
                         formula_id = getattr(formula, 'id', f'line-{line_num}')
@@ -326,27 +322,27 @@ class SymPyIntegralFilter:
                                     logger.debug(f"Skipped already processed: {formula_id}")
                                 continue
                         except Exception as e:
-                            logger.warning(f"Error checking processed status for {formula_id}: {e}")
+                            logger.warning(f"error checking processed status for {formula_id}: {e}")
 
                         has_integral_pattern = self.has_integral_pattern_fast(formula)
                         if not has_integral_pattern:
                             stats['skipped_no_integral'] += 1
                             if self.debug and stats['total_formulas'] % 1000 == 0:
-                                logger.debug(f"Skipped no integral pattern: {formula_id}")
+                                logger.debug(f"skipped no integral pattern: {formula_id}")
                             continue
                         try:
                             if self.debug:
-                                logger.debug(f"Processing formula {formula_id}")
+                                logger.debug(f"processing formula {formula_id}")
                             try:
                                 integrals = with_timeout(self.process_formula, timeout_seconds=PROCESSING_TIMEOUT_SECONDS)(formula, blob_map=blob_map)
                             except TimeoutError:
                                 stats['processing_errors'] += 1
-                                logger.warning(f"Timeout processing formula {formula_id} ({PROCESSING_TIMEOUT_SECONDS}s limit)")
+                                logger.warning(f"timeout processing formula {formula_id} ({PROCESSING_TIMEOUT_SECONDS}s limit)")
                                 # timeout occurred
                                 gc.collect()  # cleanup after timeout
                                 continue
                             if self.debug:
-                                logger.debug(f"Completed processing formula {formula_id}, found {len(integrals)} integrals")
+                                logger.debug(f"completed processing formula {formula_id}, found {len(integrals)} integrals")
                         except Exception as e:
                             stats['processing_errors'] += 1
                             logger.warning(f"Error processing formula {formula_id}: {e}")
@@ -396,7 +392,7 @@ class SymPyIntegralFilter:
                         # more frequent cleanup and stats writing
                         if stats['total_formulas'] % 500 == 0:
                             gc.collect()
-                            self._write_streaming_stats(stats_file, stats, start_time, total_lines, limit, existing_integral_count, start_line)
+                            self._write_stats(stats_file, stats, start_time, total_lines, limit, existing_integral_count, start_line)
                     except Exception as e:
                         stats['processing_errors'] += 1
                         logger.error(f"Critical error processing line {line_num}: {e}")
@@ -404,38 +400,39 @@ class SymPyIntegralFilter:
                         continue
         # final stats
         elapsed = time.time() - start_time
-        logger.info(f"\n=== STREAMING FILTER SUMMARY ===")
-        logger.info(f"Total formulas processed: {stats['total_formulas']:,}")
-        logger.info(f"Already processed (skipped): {stats['skipped_already_processed']:,}")
-        logger.info(f"No integral pattern (skipped): {stats['skipped_no_integral']:,}")
-        logger.info(f"Integrals found: {stats['integrals_found']:,}")
-        logger.info(f"Processing errors: {stats['processing_errors']:,}")
-        logger.info(f"Processing time: {elapsed/60:.1f} minutes")
-        logger.info(f"Processing rate: {stats['total_formulas']/elapsed:.1f} formulas/second")
-        self._write_final_streaming_stats(stats_file, stats, start_time, total_lines, limit, existing_integral_count, start_line)
+        logger.info(f"\n=== FILTER SUMMARY ===")
+        logger.info(f"total formulas processed: {stats['total_formulas']:,}")
+        logger.info(f"already processed (skipped): {stats['skipped_already_processed']:,}")
+        logger.info(f"no integral pattern (skipped): {stats['skipped_no_integral']:,}")
+        logger.info(f"integrals found: {stats['integrals_found']:,}")
+        logger.info(f"processing errors: {stats['processing_errors']:,}")
+        logger.info(f"processing time: {elapsed/60:.1f} minutes")
+        logger.info(f"processing rate: {stats['total_formulas']/elapsed:.1f} formulas/second")
+        self._write_final_stats(stats_file, stats, start_time, total_lines, limit, existing_integral_count, start_line)
         return stats
 
     def _debug_formula_processing(self, formula_num: int, formula_id: str, leading_expr: str = None):
         if not self.debug:
             return
-        logger.debug(f"Processing formula {formula_num}: {formula_id}")
+        logger.debug(f"processing formula {formula_num}: {formula_id}")
         if leading_expr:
-            logger.debug(f"Leading expression: {leading_expr[:200]}...")
+            logger.debug(f"leading expression: {leading_expr[:200]}...")
 
     def _debug_sympy_parsing(self, formula_num: int, expr: str, start_time: float, result: dict):
         if not self.debug:
             return
         parse_time = start_time
         logger.debug(
-            f"SymPy parsing for formula {formula_num} completed in {parse_time:.3f}s, success: {result['parsing_success']}")
+            f"sympy parsing for formula {formula_num} completed in {parse_time:.3f}s, success: {result['parsing_success']}")
         if result['parsing_success']:
-            logger.debug(f"Successfully parsed: {expr[:100]}...")
+            logger.debug(f"successfully parsed: {expr[:100]}...")
         else:
-            logger.debug(f"Failed to parse: {expr[:100]}... Error: {result.get('parsing_error', 'unknown')}")
+            logger.debug(f"failed to parse: {expr[:100]}... ERROR: {result.get('parsing_error', 'unknown')}")
 
 
-    def _write_streaming_stats(self, stats_file: Path, stats: Dict[str, int], start_time: float, total_lines: int,
-                               limit: Optional[int], existing_integral_count: int = 0, start_line: int = 0):
+    @staticmethod
+    def _write_stats(stats_file: Path, stats: Dict[str, int], start_time: float, total_lines: int,
+                     limit: Optional[int], existing_integral_count: int = 0, start_line: int = 0):
         try:
             elapsed = time.time() - start_time
             new_integrals = stats['integrals_found'] - existing_integral_count
@@ -461,10 +458,11 @@ class SymPyIntegralFilter:
             with open(stats_file, 'w', encoding='utf-8') as f:
                 json.dump(current_stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logger.warning(f"Could not write incremental stats: {e}")
+            logger.warning(f"could not write incremental stats: {e}")
 
-    def _write_final_streaming_stats(self, stats_file: Path, stats: Dict[str, int], start_time: float, total_lines: int,
-                                     limit: Optional[int], existing_integral_count: int = 0, start_line: int = 0):
+    @staticmethod
+    def _write_final_stats(stats_file: Path, stats: Dict[str, int], start_time: float, total_lines: int,
+                           limit: Optional[int], existing_integral_count: int = 0, start_line: int = 0):
         try:
             elapsed = time.time() - start_time
             new_integrals = stats['integrals_found'] - existing_integral_count
@@ -490,5 +488,5 @@ class SymPyIntegralFilter:
             with open(stats_file, 'w', encoding='utf-8') as f:
                 json.dump(final_stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logger.warning(f"Could not write final stats: {e}")
+            logger.warning(f"could not write final stats: {e}")
     
