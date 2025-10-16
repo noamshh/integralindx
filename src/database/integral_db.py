@@ -1,45 +1,36 @@
 import logging
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 import json
 import random
-
+from pathlib import Path
+from typing import List, Optional, Dict, Any
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
-from src.database.schema import (
-    Base,
-    IntegrandGroupModel,
-    IntegralInstanceModel,
-    MSEMetadataModel,
-    CurationLogModel
-)
+from src.database.schema import Base, IntegrandGroupModel, IntegralInstanceModel, MSEMetadataModel, CurationLogModel
 from corpus.formula_models import IntegrandGroup, IntegralFormula
 
 logger = logging.getLogger(__name__)
 
 
 class IntegralDatabase:
-    """Unified database access layer for integral groups and instances
+    """Defines database access for integral groups and instances
     Args:
         db_path: path to SQLite database file
-        fallback_to_jsonl: if True, fall back to JSONL loading if database doesn't exist"""
+        fallback_to_jsonl: if True, fall back to jsonl loading if database doesn't exist"""
     def __init__(self, db_path: Path, fallback_to_jsonl: bool = True):
         self.db_path = db_path
         self.fallback_to_jsonl = fallback_to_jsonl
         self.engine = None
         self.Session = None
-        # init database connection
         if db_path.exists():
             self._init_database()
         elif not fallback_to_jsonl:
             raise FileNotFoundError(f"database not found: {db_path}")
         else:
-            logger.warning(f"database not found: {db_path}, will fall back to JSONL if needed")
+            logger.warning(f"database not found: {db_path}, will fall back to jsonl if needed")
 
     def _init_database(self):
-        # use StaticPool for SQLite to avoid threading issues
         self.engine = create_engine(
             f'sqlite:///{self.db_path}',
             connect_args={'check_same_thread': False},
@@ -56,7 +47,6 @@ class IntegralDatabase:
                 poolclass=StaticPool
             )
             self.Session = sessionmaker(bind=self.engine)
-
         Base.metadata.create_all(self.engine)
         logger.info("created database tables")
 
@@ -148,13 +138,6 @@ class IntegralDatabase:
             return query.scalar()
 
     def sample_groups(self, n: int, seed: int = 42, exclude_curated: bool = True) -> List[IntegrandGroup]:
-        """Randomly sample n integrand groups
-        Args:
-            n: number of groups to sample
-            seed: random seed for reproducibility
-            exclude_curated: if True, exclude groups with removed instances
-        Returns:
-            list of sampled integrand groups"""
         if self.Session is None:
             return []
         random.seed(seed)
@@ -211,9 +194,7 @@ class IntegralDatabase:
             return [r[0] for r in removed]
 
     def rebuild_from_jsonl(self, groups_path: Path, integrals_path: Path):
-        """
-        rebuild database from JSONL files
-        Args:
+        """Args:
             groups_path: path to integrand_groups.jsonl
             integrals_path: path to integrals_all.jsonl
         """
@@ -276,8 +257,7 @@ class IntegralDatabase:
             logger.info(f"imported {len(records)} curation log entries")
 
     def _model_to_group(self, group_model: IntegrandGroupModel, session: Session, removed_instance_ids: set) -> Optional[IntegrandGroup]:
-        """
-        convert SQLAlchemy model to IntegrandGroup dataclass
+        """Convert SQLAlchemy model to IntegrandGroup dataclass
         Args:
             group_model: SQLAlchemy group model
             session: database session
@@ -320,7 +300,6 @@ class IntegralDatabase:
         )
 
     def _model_to_instance(self, instance_model: IntegralInstanceModel, session: Session) -> IntegralFormula:
-        import json
         mse_question_id = None
         mse_answer_id = None
         source_url = ""
@@ -334,7 +313,6 @@ class IntegralDatabase:
             author_name = instance_model.mse_metadata.author_name
             author_link = instance_model.mse_metadata.author_link
 
-        # parse equivalent_forms from JSON
         equivalent_forms = []
         if instance_model.equivalent_forms:
             try:
@@ -380,8 +358,6 @@ class IntegralDatabase:
         )
 
     def _dict_to_instance_models(self, data: Dict[str, Any]) -> tuple[IntegralInstanceModel, Optional[MSEMetadataModel]]:
-        import json
-        # serialize equivalent_forms to JSON string
         equivalent_forms_json = None
         if 'equivalent_forms' in data and data['equivalent_forms']:
             equivalent_forms_json = json.dumps(data['equivalent_forms'])
