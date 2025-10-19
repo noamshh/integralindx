@@ -6,12 +6,10 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <!-- Navigation -->
             <div class="mb-4">
                 <a href="/" class="btn btn-outline-secondary">← Back to Search</a>
             </div>
 
-            <!-- Header -->
             <div class="theory-header mb-5">
                 <h1 class="display-3 text-center mb-3">The Theory Behind IntegralIndx</h1>
                 <p class="lead text-center text-muted">
@@ -19,88 +17,85 @@
                 </p>
             </div>
 
-            <!-- Section 0 -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Why I Built This</h2>
-                <!-- Author Byline -->
                 <p class="text-muted mt-1 mb-3" style="font-size: 0.95rem;">
                     Written by <strong>Noam Shalev</strong> • 2025
                 </p>
                 <div class="theory-content">
                     <p>
                         In my mathematics research<sup><a href="https://arxiv.org/abs/2508.05770" target="_blank"
-                        style="text-decoration: none; color: #007bff; font-size: 1.2em;">†</a></sup> I spend a lot of time searching for integrals online, both on Google and on
-                        Math StackExchange. The frustrating part is that it's almost always textual search. I search for keywords or
-                        function names that appear in the integral and hope for the best. If I try to search for the integral
-                        itself, unless it's very simple, both Google and MSE struggle to find anything useful.
+                        style="text-decoration: none; color: #007bff; font-size: 1.2em;">†</a></sup> I spend a lot of time searching for integrals online, mainly on Google and on
+                        Math StackExchange. It is often very frustrating because this kind of textual search works well only on very simple integrals,
+                        and even then I might miss useful results due to syntactic differences between my query and the seeked results.
+                        This happens because mathematical expressions can be written in many different ways due to several reasons, including: basic mathematical rules
+                        (commutativity, power rules, etc.), naming conventions (<code>e^x</code> vs. <code>exp(x)</code>, <code>arcsin</code> vs <code>sin^{-1}</code>), or even
+                        personal taste in TeX formatting (arbitrary choice of the variable of integration, parameter names, and TeX commands).
                     </p>
                     <p>
-                        For years, I had this idea in the back of my mind: build a proper, searchable integral database. But I
-                        never had the time, and honestly, my goals were way more ambitious - I wanted a magic machine where you
-                        give it an integral and it spits out the closed-form solution. Just like that.<sup><a href="#" data-bs-toggle="tooltip"
-                        data-bs-placement="top" title="Don't worry, I haven't given up on this."
-                        style="text-decoration: none; color: #007bff; cursor: help; font-size: 1.2em;">*</a></sup>
+                        For years, I had this idea in the back of my mind: build a proper, searchable integral database. I wanted a search engine
+                        that actually 'understands' mathematical expressions, providing an easy way to find other <em>semantically</em> similar integrals,
+                        something which simple bag-of-words approaches just can't do.
                     </p>
                     <p>
-                        When I finally had some free time, and after delving deeper into machine learning theory at university, I realized
-                        how ridiculously complex this problem actually is. And here's the thing I completely missed: before you
-                        can even think about solving integrals automatically, you need <em>good embeddings</em> of mathematical
-                        expressions. I never even considered that.
-                    </p>
-                    <p>
+                        Only now, when I finally found some free time, and after delving deeper into machine learning theory at university, I realized
+                        how ridiculously complex this problem actually is. The key thing needed for such a search engine are <em>good embeddings</em> of
+                        mathematical expressions, ones that capture the actual semantic meaning of the symbols involved.
                         So I started reading some literature. I found <a href="https://arxiv.org/abs/2105.00377" target="_blank"><span style="font-variant: small-caps;">MathBERT</span></a>
                         (Peng et al., 2021), which showed impressive results on mathematical reasoning tasks. The thing is, it's fundamentally
                         a language model. It's trained on mathematical text with surrounding natural language, learning to predict masked tokens
-                        based on textual context. That works great when you have narrative around the math, but I needed something that understands
+                        based on textual context. Even though it works not too bad, I wanted something that understands
                         pure mathematical equivalence without any surrounding text.
                     </p>
                     <p>
                         Then I found <a href="https://arxiv.org/abs/2211.08142" target="_blank"><span style="font-variant: small-caps;">SemEmb</span></a>
-                        (Gangwar & Kani, 2023), which creates embeddings over symbolic mathematical content directly. This seemed like exactly what I
-                        was looking for! It had decent results and was heading in the right direction. But then I stumbled upon the
+                        (Gangwar & Kani, 2023), which creates embeddings over symbolic expressions directly. This seemed like exactly what I
+                        was looking for! It had decent results and was heading in the right direction.
+                        But then I stumbled upon the recent
                         <a href="https://arxiv.org/abs/2501.14951" target="_blank"><span style="font-variant: small-caps;">E-Gen</span></a>
                         (Zheng et al., 2025) paper, and I was genuinely thrilled. <span style="font-variant: small-caps;">E-Gen</span> took everything
-                        <span style="font-variant: small-caps;">SemEmb</span> was doing and pushed it much further, using e-graphs,
-                        to generate massive synthetic datasets of equivalent expressions.
+                        <span style="font-variant: small-caps;">SemEmb</span> was doing and pushed it much further. The greatest obstacle thus far was
+                        the very limited amount of meaningful training data available. The authors of <span style="font-variant: small-caps;">E-Gen</span> proposed a beautiful solution
+                        for this problem (using <em>e-graphs</em>), and showed how to generate massive synthetic datasets of equivalent expressions starting
+                        with only a small initial set of clean mathematical expressions. I immediately knew that i <em>must</em> try it out.
                     </p>
-                    <p> This demo is my attempt at putting that idea into practice and build
+                    <p> This demo is my attempt at putting my idea into practice, and build
                         a search engine that actually understands mathematical expressions.
                     </p>
                 </div>
             </div>
 
-            <!-- Section 1 -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">E-Graphs & E-Gen Overview</h2>
                 <div class="theory-content">
-                    <h4 class="mt-3">How Do We Get Good Embeddings of Mathematical Expressions?</h4>
+                    <h5 class="mt-4">How Do We Get Good Embeddings of Mathematical Expressions?</h5>
                     <p>
-                        The key insight is that embeddings need to capture <em>semantic equivalence</em>, not just syntactic similarity.
+                        The key insight is that embeddings need to capture semantic equivalence, not just syntactic similarity.
                         If two expressions are mathematically identical, like <code>sin²(x) + cos²(x)</code> and <code>1</code>, their embeddings should be close
                         together in vector space. But how do you teach a neural network what "mathematically equivalent" means? The answer
-                        is to train it on pairs (or clusters) of equivalent expressions. By showing the model many examples of expressions
+                        is to train it on pairs (or clusters) of equivalent expressions. By showing the model many (!) examples of expressions
                         that mean the same thing but look different, it learns to recognize the underlying mathematical structure rather
-                        than just memorizing symbol patterns.
+                        than just memorizing symbol patterns. As I mentioned, the main challenge is in the creation of a large enough corpus of such equivalence clusters,
+                        so that a model can actually read some signal off of the data.
                     </p>
 
-                    <h4 class="mt-4">What <span style="font-variant: small-caps;">SemEmb</span> Did</h4>
                     <p>
                         <span style="font-variant: small-caps;">SemEmb</span> took this approach by generating equivalent expression pairs
                         using SymPy's simplification functions. The problem is that SymPy is designed to find the <em>most simplified form</em> directly,
-                        without generating intermediate steps or diverse rewrites. This meant <span style="font-variant: small-caps;">SemEmb</span>
-                        was limited to cluster sizes of just 2 (pairs of expressions), missing out on the rich diversity of mathematical
-                        transformations that exist between the original and simplified forms.
+                        without generating intermediate steps. This meant <span style="font-variant: small-caps;">SemEmb</span>
+                        was limited to cluster sizes of just 2 (pairs of expressions), missing out on the rich diversity of equivalent expressions
+                        that exist between the original and simplified forms.
                     </p>
 
-                    <h4 class="mt-4"><span style="font-variant: small-caps;">E-Gen</span>'s Innovation: E-Graphs</h4>
+                    <h5 class="mt-4"><span style="font-variant: small-caps;">E-Gen</span>'s Innovation: E-Graphs</h5>
                     <p>
                         <span style="font-variant: small-caps;">E-Gen</span> solves this limitation using <strong>e-graphs</strong> (equality graphs),
                         a data structure originally invented in the 1980s by Nelson & Oppen for automated theorem proving.
                         The idea of <em>equality saturation</em> (applying all possible equalities within an e-graph until saturation) was later leveraged
-                        for program optimization by Tate et al. (2009). More recently,
-                        <a href="https://arxiv.org/abs/2004.03082" target="_blank">Willsey et al. (2021)</a> developed the
+                        for program optimization by Tate et al. (2009), and more recently,
+                        Willsey et al. (2021) developed the
                         <a href="https://egraphs-good.github.io/" target="_blank">egg</a> library,
-                        which made equality saturation fast and practical through new techniques like efficient rebuilding and e-class analyses.
+                        which made equality saturation fast and practical (via new techniques like efficient rebuilding and e-class analyses).
                         Instead of producing just a pair of expressions, equality saturation starts with a seed expression and systematically applies
                         mathematical rewrite rules to explore the entire space of equivalent forms. The e-graph compactly represents all these equivalences
                         in "e-classes", where each e-class contains expressions that are mathematically identical (see
@@ -109,12 +104,12 @@
                     <p>
                         This enables <span style="font-variant: small-caps;">E-Gen</span> to generate dozens or even hundreds of equivalent forms
                         per seed expression, creating rich training datasets where each expression becomes a large cluster of mathematically equivalent
-                        variants (far more diversity than <span style="font-variant: small-caps;">SemEmb</span>'s simple pairs). A transformer trained on
-                        these massive clusters using contrastive learning (pulling equivalent expressions together, pushing unrelated ones apart) learns
+                        variants. A transformer trained on  these massive clusters using contrastive learning
+                        (pulling equivalent expressions together, pushing unrelated ones apart) learns
                         to capture deep semantic relationships rather than surface-level syntactic patterns.
                     </p>
 
-                    <!-- E-Gen Framework Figure -->
+
                     <div class="theory-figure my-4">
                         <div class="text-center">
                             <img src="/static/images/egen-fig2.png" alt="E-Gen framework overview" class="img-fluid" style="max-width: 90%;">
@@ -140,26 +135,42 @@
                 </div>
             </div>
 
-            <!-- Section 2 -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Data Collection & Processing Pipeline</h2>
                 <div class="theory-content">
+                    <p> Of course, good embeddings mean little without actual data to embed. I turned to
+                        Math StackExchange for the data, knowing that it contains thousands of high-quality integrals from real problems,
+                        that people asked about and cared to solve. Better yet, each integral can be linked to its source discussion,
+                        which often includes the context in which this integral arises, possible closed-forms, and a variety of
+                        solution attempts.
+                    </p>
                     <p>
-                        When I started this project, I thought the data part would be straightforward. Scrape some integrals from Math
-                        StackExchange, throw them in a database, and move on to the interesting ML work.  Naive me.
+                        When I started this project, I thought the data part would be straightforward. Scrape the integrals from MSE,
+                        throw them in a database, and move on to the interesting ML work.  Naive me.
                     </p>
                     <p>
                         Data processing is easily the hardest part of this entire project. Real-world LaTeX from MSE
                         is messy, inconsistent, and filled with edge cases I never imagined. People write integrals in dozens of different
                         ways, use custom macros, nest them in complex equation environments, and mix them with narrative text. I needed to
                         convert all of this dirty, real-world LaTeX into a clean, normalized form that could be reliably parsed.
-                        The reason why all that LaTeX cleaning is necessary in the first place is that in order to convert expressions into prefix notation for
-                        the transformer, I needed to parse everything through SymPy to get the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree"
-                        target="_blank">Abstract Syntax Tree (AST)</a> representation. An AST is essentially a tree structure that captures the
-                        mathematical meaning of an expression independent of how it's written. Only with this structured representation could I
-                        systematically convert expressions to prefix notation. While there are some good LaTeX-to-SymPy parsers out there, nothing
+                    </p>
+                    <h5 class="mt-4">Why can't we just use the LaTex as is?</h5>
+                    <p> LaTeX is designed for typesetting, not semantic analysis. The expression <code>x²</code>
+                        can be written as <code>x^2</code>, <code>x^{2}</code>, <code>{x}^{ 2 }</code>, and many other variations which result
+                        in the same visuals. These different strings would be treated as unrelated epxressions if we were to tokenize LaTeX directly.
+                        SymPy provides <em>semantic</em> parsing: a canonical
+                        <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree"
+                        target="_blank">tree representation</a> that stays the same regardless of how the expression was typeset.
+                        This semantic representation is useful here for two reasons: first, it gives an easy way to convert the expression to
+                        prefix notation (<code>pow x 2</code>), which is a good format to apply tokenization to, and second,
+                        it allows us to use SymPy's simplification functions to deduplicate integrals by their canonical integrand.
+                    </p>
+                    <p> But getting to that point required building custom parsing logic to clean the raw MSE data.
+                        After applying a plethora of hand-tailored normalization and filtering rules (which I'll describe below),
+                        we still need to convert the cleaned LaTeX into SymPy format.  While there are some good LaTeX-to-SymPy parsers out there, nothing
                         exactly fit my requirements. I ended up forking the <a href="https://github.com/huggingface/latex2sympy2_extended" target="_blank"><code>latex2sympy2_extended</code></a>
-                        package (which is itself a fork of previous latex2sympy versions) and adding custom parsing capabilities for special functions and integral-specific syntax. Even then, I had to be pretty restrictive: blacklisting certain LaTeX commands that caused
+                        package (which is itself a fork of previous latex2sympy versions) and adding custom parsing capabilities for some special functions.
+                        Even then, I had to be pretty restrictive: blacklisting certain LaTeX commands that caused
                         parsing issues, setting timeouts on the parser (20 seconds per expression), and rejecting anything that looked remotely
                         ambiguous. I'm sure I lost thousands of potentially valid integrals in the process, but reliability was more important
                         than coverage.
@@ -169,411 +180,242 @@
                         and variable canonicalization. Let me walk you through it.
                     </p>
 
-                    <h4 class="mt-4">Pipeline Overview</h4>
+                    <h5 class="mt-4">Pipeline Overview</h5>
                     <p>
-                        IntegralIndx's dataset comprises <strong>23,638 integral instances</strong> organized into
-                        <strong>12,337 unique integrand groups</strong>, curated from over 206,000 Math StackExchange expressions.
-                        The data processing pipeline ensures mathematical correctness and consistency through multiple validation stages.
+                        From <strong>206k raw MSE expressions</strong> to <strong>23,638 integrals</strong> in <strong>12,337 unique groups</strong>:
                     </p>
 
-                    <h4 class="mt-4">Pipeline Stages</h4>
-
-                    <div class="card mb-3">
-                        <div class="card-header" style="background-color: #f8f9fa; border-bottom: 2px solid #007bff;">
-                            <strong>Stage 1: Math StackExchange Scraping</strong>
-                        </div>
-                        <div class="card-body">
-                            <ul class="mb-0">
-                                <li>Source: ~70 pages of MSE data</li>
-                                <li>Raw extraction: <strong>206,328 LaTeX expressions</strong></li>
-                                <li>Includes both questions and answers with mathematical content</li>
+                    <ol>
+                        <li><strong>MSE Scraping:</strong> Query Math StackExchange API with 20 integral-related tags
+                            <ul>
+                                <li>Tags: closed-form, integration, definite-integrals, special-functions, polylogarithm, etc.</li>
+                                <li>80 pages per tag, 100 questions per page, sorted by votes</li>
+                                <li>Result: 206,328 raw LaTeX expressions from questions and answers</li>
                             </ul>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-header" style="background-color: #f8f9fa; border-bottom: 2px solid #007bff;">
-                            <strong>Stage 2: LaTeX Normalization</strong>
-                        </div>
-                        <div class="card-body">
-                            <ul class="mb-0">
-                                <li>Parse LaTeX environments (align, equation, gather)</li>
-                                <li>Extract relation chains (A = B = C → [A, B, C])</li>
-                                <li>Capture equivalent forms automatically</li>
+                        </li>
+                        <li><strong>LaTeX Normalization:</strong> Clean and structure the raw LaTeX
+                            <ul>
+                                <li>Parse LaTeX environments (align, equation, etc.)</li>
+                                <li>Extract relation chains (A = B = C --> [A, B, C]) to capture equivalent forms</li>
                                 <li>Separate parametric conditions (e.g., "for x > 0")</li>
                             </ul>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-header" style="background-color: #f8f9fa; border-bottom: 2px solid #007bff;">
-                            <strong>Stage 3: Integral Extraction & Validation</strong>
-                        </div>
-                        <div class="card-body">
-                            <ul class="mb-0">
-                                <li>Advanced integral parsing (definite and indefinite)</li>
-                                <li>SymPy validation for mathematical correctness</li>
+                        </li>
+                        <li><strong>Integral Extraction & Validation:</strong> Parse and validate integral expressions
+                            <ul>
+                                <li>Advanced parsing for definite and indefinite integrals</li>
+                                <li>SymPy validation to ensure mathematical correctness</li>
                                 <li>Quality filtering and deduplication</li>
-                                <li><strong>Result: 26,730 validated integrals</strong></li>
+                                <li>Result: 26,730 validated integrals</li>
                             </ul>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-header" style="background-color: #f8f9fa; border-bottom: 2px solid #007bff;">
-                            <strong>Stage 4: Variable Normalization & Grouping</strong>
-                        </div>
-                        <div class="card-body">
-                            <ul class="mb-0">
-                                <li>Standardize integration variables (t, y, θ → x)</li>
-                                <li>Normalize unknown functions (f(x), g(x) → UNK_FUNC(x))</li>
-                                <li>Canonical parameter ordering (a, b, c → alphabetical)</li>
-                                <li>Group by unique integrand hash for deduplication</li>
-                                <li><strong>Result: 12,337 unique integrand groups from 23,638 integral instances</strong></li>
+                        </li>
+                        <li><strong>Variable Normalization & Grouping:</strong> Canonicalize for ML training
+                            <ul>
+                                <li>Standardize integration variables: t, y, z --> x</li>
+                                <li>Normalize parameters to alphabetical ordering: a, b, c (max 3 parameters)</li>
+                                <li>Group by unique integrand hash after simplification</li>
+                                <li>Result: 12,337 unique integrand groups from 23,638 instances</li>
                             </ul>
-                        </div>
-                    </div>
-
-                    <h4 class="mt-4">Dataset Statistics</h4>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <div class="stat-number">23,638</div>
-                                <div class="stat-label">Integral Instances</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <div class="stat-number">12,337</div>
-                                <div class="stat-label">Unique Integrands</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <div class="stat-number">206K</div>
-                                <div class="stat-label">Raw Expressions</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-item">
-                                <div class="stat-number">70</div>
-                                <div class="stat-label">Token Vocabulary</div>
-                            </div>
-                        </div>
-                    </div>
+                        </li>
+                        <p>
+                            I do hope to find the time in the future to scale up this database, and create similar databases
+                            for sums, products, and special functions.
+                        </p>
+                    </ol>
                 </div>
             </div>
 
-            <!-- Section 3 -->
             <div class="theory-section mb-5">
-                <h2 class="theory-section-header">Training Process</h2>
+                <h2 class="theory-section-header">Model Architecture & Training</h2>
                 <div class="theory-content">
+
+                    <h5 class="mt-4">Transformer Architecture</h5>
                     <p>
-                        The model is trained using <strong>contrastive learning</strong> with the InfoNCE loss objective.
-                        The key idea is to pull embeddings of mathematically equivalent expressions closer together in
-                        the embedding space while pushing unrelated expressions apart.
+                        IntegralIndx uses an encoder-only transformer architecture for generating mathematical expression embeddings.
+                        The model processes tokenized expressions in prefix notation and produces vector representations via mean pooling.
+                        Unlike seq2seq, this architecture directly optimizes for embedding quality through contrastive learning, making it
+                        ideal for similarity search tasks.
                     </p>
 
-                    <h4 class="mt-4">Training Objective</h4>
-                    <ul>
-                        <li><strong>Task:</strong> Learn to embed mathematically equivalent expressions near each other</li>
-                        <li><strong>Loss:</strong> InfoNCE (contrastive) loss - maximize similarity of positive pairs, minimize for negatives</li>
-                        <li><strong>Positive Pairs:</strong> Equivalent expressions generated via e-graph rewrites (e.g., sin(x)cos(x) ↔ sin(2x)/2)</li>
-                        <li><strong>Negative Pairs:</strong> Randomly sampled unrelated expressions from the batch</li>
-                        <li><strong>Optimization:</strong> Adam optimizer with learning rate scheduling</li>
-                    </ul>
-
-                    <h4 class="mt-4">Data Augmentation with E-Graphs</h4>
-                    <p>
-                        The power of E-Gen comes from augmenting training data with <strong>mathematically equivalent expressions</strong>
-                        generated using e-graph rewrite rules. This includes:
-                    </p>
-                    <ul>
-                        <li>Algebraic simplifications and expansions</li>
-                        <li>Trigonometric identities (e.g., sin²(x) + cos²(x) = 1)</li>
-                        <li>Logarithmic properties (e.g., log(ab) = log(a) + log(b))</li>
-                        <li>Commutativity and associativity rewrites</li>
-                    </ul>
-
-                    <!-- Placeholder Figure -->
-                    <div class="theory-figure my-4">
-                        <div class="figure-placeholder">
-                            <img src="/static/images/training_curves.svg" alt="Training curves" class="img-fluid">
-                            <p class="figure-caption text-center mt-2">
-                                <em>Figure 2: Training and validation loss curves showing model convergence</em>
-                            </p>
+                    <div class="row mt-3 align-items-start">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead><tr><th>Component</th><th>Specification</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Encoder Layers</td><td>6</td></tr>
+                                    <tr><td>Hidden Dimension</td><td>512</td></tr>
+                                    <tr><td>Attention Heads</td><td>8</td></tr>
+                                    <tr><td>Feed-Forward Dimension</td><td>2048</td></tr>
+                                    <tr><td>Dropout</td><td>0.1</td></tr>
+                                    <tr><td>Positional Encoding</td><td>Sinusoidal</td></tr>
+                                    <tr><td>Pooling Strategy</td><td>Mean</td></tr>
+                                    <tr><td>Output Embedding Dimension</td><td>512</td></tr>
+                                    <tr><td>Vocabulary Size</td><td>62 tokens (see <a href="#tokenization">Tokenization section</a>)</td></tr>
+                                    <tr><td>Total Parameters</td><td>18,946,048 (~19M)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <img src="/static/images/encoder_c.svg" alt="Encoder architecture" class="img-fluid">
+                            </div>
                         </div>
                     </div>
+                    <p class="figure-caption text-center mt-2">
+                        <em>Figure 2: Transformer encoder architecture with mean pooling for mathematical expression embeddings.
+                        Input tokens pass through 6 transformer layers with multi-head self-attention (8 heads) and feed-forward networks (2048D),
+                        producing representations that are mean-pooled to generate 512-dimensional embeddings.</em>
 
-                    <p>
-                        By training with contrastive pairs of equivalent forms, the model learns that <code>sin(x)cos(x)</code> and
-                        <code>sin(2x)/2</code> should have similar embeddings (positive pairs), while unrelated expressions
-                        like <code>log(x)</code> should be far apart (negative pairs). This enables semantic similarity search
-                        beyond mere syntactic matching.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Section 3.5: Tokenization & Prefix Notation -->
-            <div class="theory-section mb-5" id="tokenization">
-                <h2 class="theory-section-header">Tokenization & Prefix Notation</h2>
-                <div class="theory-content">
-                    <p>
-                        Before a mathematical expression can be fed into the transformer model, it must be converted from its
-                        standard mathematical notation into a format the model can understand. This involves two key steps:
-                        <strong>conversion to prefix notation</strong> and <strong>tokenization</strong>. Both are crucial for
-                        making the model work with mathematical expressions in a structured, unambiguous way.
+                        (<small class="text-muted">Figure made with draw.io</small>)
                     </p>
 
-                    <h4 class="mt-4">Why Prefix Notation?</h4>
+                    <h5 class="mt-4">Contrastive Learning</h5>
                     <p>
-                        <strong>Prefix notation</strong> (also called <a href="https://en.wikipedia.org/wiki/Polish_notation" target="_blank">Polish notation</a>)
-                        is a mathematical notation where operators precede their operands. For example, the expression <code>2 + 3</code>
-                        becomes <code>+ 2 3</code> in prefix notation. This might seem unusual at first, but it has several critical advantages:
+                        The model is trained using contrastive learning with the InfoNCE loss (temperature=0.1).
+                        This is a self-supervised approach: rather than requiring manual labels, the model learns from equivalence clusters generated
+                        automatically via e-graph rewrite rules. Given a query expression and its positive equivalent, the loss maximizes their cosine
+                        similarity while minimizing similarity to negative samples (randomly sampled from other clusters). This forces the encoder to
+                        learn representations where mathematically equivalent expressions cluster together in the 512-dimensional embedding space.
                     </p>
-                    <ul>
-                        <li><strong>No operator precedence ambiguity:</strong> Unlike infix notation (<code>2 + 3 * 4</code>), prefix notation
-                            doesn't require parentheses or precedence rules. <code>+ 2 * 3 4</code> is unambiguous.</li>
-                        <li><strong>Tree-based representation:</strong> Prefix notation naturally corresponds to the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree" target="_blank">Abstract Syntax Tree (AST)</a>
-                            structure of expressions, making it ideal for symbolic computation.</li>
-                        <li><strong>Sequential parsing:</strong> The model can process tokens left-to-right in a single pass,
-                            which is perfect for transformer architectures.</li>
-                        <li><strong>E-Gen compatibility:</strong> The E-Gen e-graph system requires expressions in <a href="https://en.wikipedia.org/wiki/S-expression" target="_blank">S-expression</a>
-                            format (Lisp-style notation), which is essentially prefix notation with parentheses.</li>
-                    </ul>
 
-                    <h4 class="mt-4">From SymPy to Prefix to S-expressions</h4>
+                    <h5 class="mt-4">Training Data Generation</h5>
                     <p>
-                        The conversion pipeline follows these steps:
+                        Training data was generated through a two-stage pipeline:
                     </p>
+
                     <ol>
-                        <li><strong>SymPy parsing:</strong> User input → SymPy expression object (validated AST)</li>
-                        <li><strong>Prefix notation:</strong> SymPy AST → space-separated prefix tokens</li>
-                        <li><strong>S-expression:</strong> Prefix tokens → parenthesized Lisp-style notation (for E-Gen)</li>
+                        <li><strong>Seed Selection</strong>: 1,793 seed expressions were frozen for training:
+                            <ul>
+                                <li>337 hand-crafted synthetic seeds covering common patterns (polynomials, trig identities, logarithms, etc.)</li>
+                                <li>1,456 expressions extracted from the IntegralIndx database with max token length = 8</li>
+                                <li>Token limit ensures E-Gen can generate rich, diverse equivalents without timing out</li>
+                            </ul>
+                        </li>
+                        <li><strong>E-Gen Equivalence Generation</strong>: Apply <span style="font-variant: small-caps;">E-Gen</span> to each seed. Of the 1,793 seeds,
+                            1,243 seeds successfully generated equivalents (69.3% success rate), producing an average of
+                            154 equivalents per seed (median: 74). This resulted in 191,394 total equivalent
+                            expressions across all clusters. The variability in cluster sizes reflects the mathematical complexity
+                            of different expressions: simple expressions often yield larger clusters,
+                            while complex expressions may have fewer equivalent forms within the token limit.
+                        </li>
+                        <li><strong>TSV Construction</strong>: Split seeds 80/10/10 (train/val/test). For each seed, generate
+                            all pairwise combinations (query, positive) and sample 3 negatives from other clusters within the same split
+                            (clusters with more than 200 equivalents are restricted to 70 positives per query via
+                            random sampling to prevent over-representation).
+                            The dataset is stored in TSV (tab-separated values) format for efficient loading.
+                            <ul>
+                                <li>Train: 12.68M lines (994 seeds)</li>
+                                <li>Validation: 1.59M lines (124 seeds)</li>
+                                <li>Test: 1.46M lines (125 seeds)</li>
+                                <li>Total: 15.73M training quintuples (query, positive, neg1, neg2, neg3)</li>
+                            </ul>
+                        </li>
                     </ol>
 
-                    <div class="card bg-light p-3 mb-3">
-                        <strong>Example conversions:</strong><br>
-                        <code>SymPy: x**2 + sin(x)</code><br>
-                        <code>Prefix: add pow x 2 sin x</code><br>
-                        <code>S-expr: (+ (pow x 2) (sin x))</code><br>
-                        <br>
-                        <code>SymPy: log(x + 1) * a</code><br>
-                        <code>Prefix: mul log add x 1 a</code><br>
-                        <code>S-expr: (* (log (+ x 1)) a)</code>
-                    </div>
-
-                    <h4 class="mt-4">What are S-expressions?</h4>
+                    <h5 class="mt-4">Training Procedure</h5>
                     <p>
-                        <strong>S-expressions</strong> (<a href="https://en.wikipedia.org/wiki/S-expression" target="_blank">symbolic expressions</a>)
-                        are a notation for nested list data, originally from the Lisp programming language. They use parentheses to
-                        explicitly mark the boundaries of function applications. E-Gen's e-graph engine uses S-expressions internally
-                        because they provide a canonical, unambiguous representation perfect for applying rewrite rules during
-                        equality saturation.
+                        The model was trained for 4 epochs over 49 hours on a rented L40S GPU
+                        via Vast.ai (totaling $35). The production model uses checkpoint 175,000 (3.5 epochs, 43 hours), as the final checkpoint
+                        was accidentally deleted (sigh). Training used the AdamW optimizer with cosine annealing and a 1-epoch warmup schedule.
+                        The warmup phase linearly increases the learning rate from 1e-5 to 1e-4, after which the learning rate decays via
+                        cosine annealing to a minimum of 1e-6.
                     </p>
 
-                    <h4 class="mt-4">Tokenization: Fixed Vocabulary</h4>
+                    <table class="table table-sm table-bordered mt-3">
+                        <thead><tr><th>Hyperparameter</th><th>Value</th></tr></thead>
+                        <tbody>
+                            <tr><td>Optimizer</td><td>AdamW (beta_1=0.9, beta_2=0.999, eps=1e-8)</td></tr>
+                            <tr><td>Learning Rate (max)</td><td>1e-4</td></tr>
+                            <tr><td>Weight Decay</td><td>0.01</td></tr>
+                            <tr><td>LR Schedule</td><td>Cosine Annealing + Linear Warmup</td></tr>
+                            <tr><td>Warmup Epochs</td><td>1</td></tr>
+                            <tr><td>Min Learning Rate</td><td>1e-6</td></tr>
+                            <tr><td>Batch Size</td><td>256</td></tr>
+                            <tr><td>Gradient Clipping</td><td>max_norm = 1.0</td></tr>
+                            <tr><td>Loss Function</td><td>InfoNCE</td></tr>
+                            <tr><td>Temperature</td><td>0.1</td></tr>
+                            <tr><td>Epochs</td><td>4</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h5 class="mt-4">Training Results</h5>
                     <p>
-                        Once in prefix notation, the expression is split into individual tokens. IntegralIndx uses a <strong>frozen vocabulary
-                        of exactly 70 tokens</strong>, carefully designed to cover the mathematical functions needed for integral expressions
-                        while remaining small enough for efficient transformer training.
+                        The model converges steadily across 3.5 epochs, with training loss decreasing from 1.18 (initial) to ~0.0015
+                        and validation loss from 0.0131 (end of epoch 1) to ~0.009. Validation loss tracks training loss closely
+                        with minimal overfitting, indicating good generalization to unseen equivalence clusters.
                     </p>
 
-                    <div class="card bg-light p-3 mb-3">
-                        <strong>Vocabulary breakdown (70 tokens total):</strong>
-                        <ul class="mb-0">
-                            <li><strong>Variables (4):</strong> <code>x</code> (integration variable), <code>a b c</code> (parameters)</li>
-                            <li><strong>Constants (14):</strong> <code>0-9</code> (digits), <code>pi e</code> (mathematical constants), <code>INT+ INT-</code> (multi-digit integers)</li>
-                            <li><strong>Operators (49):</strong>
-                                <ul>
-                                    <li>Basic: <code>add sub mul div pow sqrt</code></li>
-                                    <li>Trigonometric: <code>sin cos tan cot sec csc</code></li>
-                                    <li>Inverse trig: <code>asin acos atan acot asec acsc</code></li>
-                                    <li>Hyperbolic: <code>sinh cosh tanh coth sech csch</code></li>
-                                    <li>Inverse hyperbolic: <code>asinh acosh atanh acoth asech acsch</code></li>
-                                    <li>Other: <code>exp log abs Li zeta</code></li>
-                                </ul>
-                            </li>
-                            <li><strong>Special tokens (3):</strong> <code>PAD SOE EOE</code> (padding, start-of-expression, end-of-expression)</li>
-                        </ul>
-                    </div>
-
-                    <h4 class="mt-4">Variable Normalization</h4>
-                    <p>
-                        To maintain a fixed vocabulary, IntegralIndx performs <strong>variable normalization</strong> before tokenization:
-                    </p>
-                    <ul>
-                        <li><strong>Integration variable:</strong> Always normalized to <code>x</code>
-                            <br><small class="text-muted">Examples: ∫ f(t) dt → ∫ f(x) dx, ∫ g(y) dy → ∫ g(x) dx, ∫ h(θ) dθ → ∫ h(x) dx</small>
-                        </li>
-                        <li><strong>Parameters:</strong> Ordered alphabetically and renamed to <code>a, b, c</code> (maximum 3 parameters)
-                            <br><small class="text-muted">Examples: x^α → x^a, x^β*sin(x) → x^a*sin(x), x^γ*y^δ → x^a*x^b (after y→x)</small>
-                        </li>
-                        <li><strong>Function whitelist:</strong> Only expressions using the 49 supported operators are accepted</li>
-                    </ul>
-
-                    <div class="card bg-light p-3 mb-3">
-                        <strong>Complete example with variable normalization:</strong><br>
-                        <code>Original: ∫₀² y^α · sin(y) dy</code><br>
-                        <code>After normalization: ∫₀² x^a · sin(x) dx</code><br>
-                        <code>SymPy canonical: x**a * sin(x)</code><br>
-                        <code>Prefix notation: mul pow x a sin x</code><br>
-                        <code>Tokenized: [SOE, mul, pow, x, a, sin, x, EOE, PAD, PAD, ...]</code>
-                    </div>
-
-                    <p>
-                        This normalization ensures that mathematically equivalent integrals (differing only in variable names)
-                        map to identical token sequences, enabling the model to recognize their semantic similarity.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Section 4 -->
-            <div class="theory-section mb-5">
-                <h2 class="theory-section-header">Model Architecture</h2>
-                <div class="theory-content">
-                    <p>
-                        IntegralIndx uses an <strong>encoder-only transformer</strong> architecture based on the original
-                        E-Gen paper. The model treats mathematical expressions as sequences in prefix (Polish) notation and learns
-                        meaningful embeddings through contrastive learning on mathematically equivalent expressions.
-                    </p>
-
-                    <h4 class="mt-4">Architecture Specifications</h4>
-                    <div class="card bg-light p-3 mb-3">
-                        <ul class="mb-0">
-                            <li><strong>Encoder:</strong> 6-layer transformer (512 hidden dimensions, 8 attention heads, 0.1 dropout)</li>
-                            <li><strong>Feedforward Dimension:</strong> 2048 (standard 4× expansion)</li>
-                            <li><strong>Embedding Dimension:</strong> 512D (mean pooling over sequence)</li>
-                            <li><strong>Vocabulary:</strong> 70 tokens (see <a href="#tokenization">Tokenization section</a> for full breakdown)</li>
-                            <li><strong>Positional Encoding:</strong> Sinusoidal positional embeddings</li>
-                            <li><strong>Pooling Strategy:</strong> Mean pooling over token representations</li>
-                        </ul>
-                    </div>
-
-                    <!-- Placeholder Figure -->
                     <div class="theory-figure my-4">
                         <div class="text-center">
-                            <img src="/static/images/encoder.svg" alt="Encoder architecture" class="img-fluid">
+                            <img src="/static/images/training_curves.svg" alt="Training curves" class="img-fluid">
                             <p class="figure-caption text-center mt-2">
-                                <em>Figure 3: Transformer encoder architecture with mean pooling for mathematical expression embeddings</em>
+                                <em>Figure 3: Training and validation loss curves over ~198k iterations (3.5 epochs). The bump at iteration ~49k
+                                corresponds to the warmup schedule transitioning from 1e-5 to 1e-4. Both losses decrease steadily, indicating
+                                successful contrastive learning of mathematical equivalence. Validation is evaluated every 10k iterations (marked with orange dots).</em>
                             </p>
                         </div>
                     </div>
-
-                    <h4 class="mt-4">Prefix Notation Representation</h4>
-                    <p>
-                        Mathematical expressions are converted to prefix notation (Polish notation) for tokenization.
-                        This representation:
-                    </p>
-                    <ul>
-                        <li>Eliminates ambiguity from operator precedence</li>
-                        <li>Provides a canonical sequential form</li>
-                        <li>Simplifies parsing and generation</li>
-                    </ul>
-                    <div class="card bg-light p-3">
-                        <strong>Example transformations:</strong><br>
-                        <code>x² + sin(x)</code> → <code>"add pow x 2 sin x"</code><br>
-                        <code>log(x + 1)</code> → <code>"log add x 1"</code><br>
-                        <code>polylog(2, x)</code> → <code>"Li 2 x"</code>
-                    </div>
                 </div>
             </div>
 
-            <!-- Section 5: FAISS Similarity Search -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">FAISS Similarity Search</h2>
                 <div class="theory-content">
                     <p>
                         Once the transformer model has generated 512-dimensional embeddings for all integrand groups in the database,
                         the next challenge is efficient similarity search: given a query embedding, how do we quickly find the most
-                        similar integrands among thousands of candidates? This is where <strong>FAISS</strong> (Facebook AI Similarity Search)
-                        comes in.
-                    </p>
-
-                    <h4 class="mt-4">What is FAISS?</h4>
-                    <p>
-                        <a href="https://github.com/facebookresearch/faiss" target="_blank"><strong>FAISS</strong></a> is a library
+                        similar integrands among thousands of candidates? This is where
+                        <a href="https://github.com/facebookresearch/faiss" target="_blank">FAISS</a> (Facebook AI Similarity Search)
+                        comes in. FAISS is a library
                         developed by Facebook AI Research for efficient similarity search and clustering of dense vectors. It's optimized
                         for large-scale vector search operations and is widely used in recommendation systems, image retrieval, and
                         natural language processing. FAISS provides both exact and approximate nearest neighbor search algorithms,
                         with support for CPU and GPU acceleration.
                     </p>
-
-                    <h4 class="mt-4">Index Type: IndexFlatIP</h4>
                     <p>
-                        IntegralIndx uses <code>IndexFlatIP</code> (Flat Inner Product), which performs <strong>exact search</strong>
-                        using inner product (dot product) similarity. Here's why this design works:
+                        IntegralIndx uses <code>IndexFlatIP</code> (Flat Inner Product), which performs exact search
+                        using dot product similarity. Note that mathematically, via L2-normalization, dot product similarity is the same as
+                        cosine similarity. The flat index guarantees exact nearest neighbors (no false negatives), which naturally requires more compute
+                        (flat index requires O(n) comparisons), but with our n=12k database this is less than 10ms on a modern CPU.
+                        For larger datasets, approximate indexes like IVFFlat or HNSW would be faster.
                     </p>
-                    <ul>
-                        <li><strong>L2 normalization:</strong> All embeddings are L2-normalized to unit length (||v|| = 1)</li>
-                        <li><strong>Cosine similarity via dot product:</strong> For normalized vectors, the dot product equals cosine similarity:
-                            <br><code>cos(θ) = (v₁ · v₂) / (||v₁|| ||v₂||) = v₁ · v₂</code> (when both are unit vectors)
-                        </li>
-                        <li><strong>Efficient computation:</strong> Inner product is computationally cheaper than explicit cosine calculation</li>
-                        <li><strong>No approximation:</strong> Flat index guarantees exact nearest neighbors (no false negatives)</li>
-                    </ul>
-
-                    <div class="card bg-light p-3 mb-3">
-                        <strong>Why L2 normalization?</strong>
-                        <p class="mb-0 mt-2">
-                            L2 normalization projects all vectors onto the unit hypersphere. In this space, <strong>cosine similarity</strong>
-                            (the angle between vectors) becomes equivalent to the <strong>dot product</strong>. This transformation allows
-                            us to use the efficient <code>IndexFlatIP</code> while measuring semantic similarity based on direction rather
-                            than magnitude. Expressions with similar mathematical structure will have embeddings pointing in similar directions,
-                            resulting in high cosine similarity.
-                        </p>
-                    </div>
-
-                    <h4 class="mt-4">Search Pipeline</h4>
+                    <h5 class="mt-4">Search Pipeline</h5>
                     <p>
                         When you submit a query integrand, the system performs the following steps:
                     </p>
                     <ol>
-                        <li><strong>Variable normalization:</strong> Query → normalize to <code>x, a, b, c</code> (same as training)</li>
-                        <li><strong>SymPy conversion:</strong> Normalized query → SymPy AST (validated syntax)</li>
-                        <li><strong>Prefix notation:</strong> SymPy AST → space-separated prefix tokens</li>
-                        <li><strong>Tokenization:</strong> Prefix tokens → token IDs using 70-token vocabulary</li>
-                        <li><strong>Embedding:</strong> Token IDs → 512D embedding vector (via transformer encoder)</li>
-                        <li><strong>L2 normalization:</strong> Embedding → unit vector (for cosine similarity)</li>
-                        <li><strong>FAISS search:</strong> Find top-k nearest neighbors using inner product</li>
-                        <li><strong>Result formatting:</strong> Return integrand groups with similarity scores</li>
+                        <li><strong>Variable normalization:</strong> query --> normalize to <code>x, a, b, c</code> (same as training)</li>
+                        <li><strong>SymPy conversion:</strong> normalized query --> SymPy (validated syntax and allowed functions)</li>
+                        <li><strong>Prefix notation:</strong> SymPy --> space-separated prefix tokens</li>
+                        <li><strong>Tokenization:</strong> prefix tokens --> token IDs using vocabulary</li>
+                        <li><strong>Embedding:</strong> token IDs --> 512D embedding vector (via the trained encoder)</li>
+                        <li><strong>L2 normalization:</strong> embedding --> unit vector (for cosine similarity)</li>
+                        <li><strong>FAISS search:</strong> find top-k nearest neighbors</li>
+                        <li><strong>Result formatting:</strong> return integrand groups with similarity scores</li>
                     </ol>
+                </div>
+            </div>
 
-                    <div class="card bg-light p-3 mb-3">
-                        <strong>Example search:</strong><br>
-                        <code>Query: log(sin(x))</code><br>
-                        <code>↓ Prefix: log sin x</code><br>
-                        <code>↓ Embed: [0.023, -0.145, 0.089, ..., 0.201]</code> (512D)<br>
-                        <code>↓ Normalize: ||v|| = 1.0</code><br>
-                        <code>↓ FAISS search: k=6 nearest neighbors</code><br>
-                        <code>↓ Results: [log(sin(x)), log(cos(x)), sin(log(x)), ...]</code> with scores [0.95, 0.87, 0.79, ...]
-                    </div>
-
-                    <h4 class="mt-4">Performance Characteristics</h4>
-                    <ul>
-                        <li><strong>Index size:</strong> 12,337 vectors × 512 dimensions × 4 bytes = ~25 MB (fits in memory)</li>
-                        <li><strong>Search time:</strong> Flat index requires O(n) comparisons, but with n=12K this is <10ms on modern CPUs</li>
-                        <li><strong>Exact results:</strong> No approximation error (unlike IVF or HNSW indexes)</li>
-                        <li><strong>Trade-off:</strong> For larger datasets (100K+ vectors), approximate indexes like IVFFlat or HNSW would be faster</li>
-                    </ul>
-
-                    <p>
-                        The combination of contrastive learning, L2-normalized embeddings, and FAISS inner product search creates
-                        a powerful semantic similarity engine. Mathematically equivalent expressions (e.g., <code>sin²(x) + cos²(x)</code>
-                        and <code>1</code>) are pulled close together during training, and FAISS efficiently retrieves these neighbors
-                        at query time based on their angular proximity in the 512-dimensional embedding space.
+            <div class="theory-section mb-5">
+                <h2 class="theory-section-header">Closing Thoughts</h2>
+                <div class="theory-content">
+                    <p> So that's IntegralIndx: from an idea I had years ago to a working semantic search engine built on e-graphs
+                        and contrastive learning. It's far from perfect: the database is still small,
+                        the normalization pipeline could be more efficient, training could be longer,
+                        and I'm certain there are parsing errors
+                        lurking in edge cases I haven't encountered yet. But it does what I wanted: you can type in
+                        an integral, and it actually understands what you're looking for, not just what characters you typed.
+                        Whether you're a student stuck on a homework problem or a researcher hunting for closed forms,
+                        I hope this makes finding relevant integrals a little less frustrating than it was for me.
                     </p>
                 </div>
             </div>
 
-            <!-- Attribution & Acknowledgments Section -->
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Acknowledgments & Attribution</h2>
                 <div class="theory-content">
 
-                    <!-- E-Gen Research -->
                     <h4 class="mt-4">E-Gen Research</h4>
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>Paper:</strong> Zheng, H., Wang, S., Gangwar, N., & Kani, N. (2025).
                             "E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions."
@@ -600,10 +442,9 @@
                         </p>
                     </div>
 
-                    <!-- Related Work -->
                     <h4 class="mt-4">Related Work</h4>
 
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>MathBERT:</strong> Peng, S., Yuan, K., Gao, L., & Tang, Z. (2021).
                             "MathBERT: A Pre-trained Language Model for General NLP Tasks in Mathematics Education."
@@ -615,7 +456,7 @@
                         </p>
                     </div>
 
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>SemEmb:</strong> Gangwar, N., & Kani, N. (2023).
                             "Semantic Representations of Mathematical Expressions in a Continuous Vector Space."
@@ -627,7 +468,7 @@
                         </p>
                     </div>
 
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>E-graphs (Original):</strong> Nelson, G., & Oppen, D. C. (1980).
                             "Fast Decision Procedures Based on Congruence Closure."
@@ -635,7 +476,7 @@
                         </p>
                     </div>
 
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>Equality Saturation:</strong> Tate, R., Stepp, M., Tatlock, Z., & Lerner, S. (2009).
                             "Equality Saturation: A New Approach to Optimization."
@@ -643,7 +484,7 @@
                         </p>
                     </div>
 
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>egg (Fast Equality Saturation):</strong> Willsey, M., Nandi, C., Wang, Y. R., Flatt, O., Tatlock, Z., & Panchekha, P. (2021).
                             "egg: Fast and Extensible Equality Saturation."
@@ -660,9 +501,8 @@
                         </p>
                     </div>
 
-                    <!-- Data Source -->
                     <h4 class="mt-4">Data Source</h4>
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>Math StackExchange:</strong> All integral expressions in this dataset are sourced from
                             <a href="https://math.stackexchange.com" target="_blank">Math StackExchange</a>,
@@ -677,9 +517,8 @@
                         </p>
                     </div>
 
-                    <!-- Project License -->
                     <h4 class="mt-4">Project License & Disclaimer</h4>
-                    <div class="card bg-light p-3 mb-3">
+                    <div class="card p-3 mb-3">
                         <p class="mb-2">
                             <strong>License:</strong> IntegralIndx is licensed under
                             <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">
@@ -703,23 +542,10 @@
                 </div>
             </div>
 
-            <!-- Back Navigation -->
             <div class="text-center mb-5">
                 <a href="/" class="btn btn-outline-secondary">← Back to Search</a>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-// Initialize Bootstrap tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
-</script>
 {% endblock %}
