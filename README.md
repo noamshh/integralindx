@@ -1,6 +1,16 @@
-# IntegralIndx
+<p align="center">
+  <img src="src/web/static/images/logo.svg" alt="IntegralIndx Logo" width="400">
+</p>
 
-**Semantic search for mathematical integrals using E-Gen embeddings and contrastive learning**
+<p align="center">
+  <strong>Semantic search for mathematical integrals using E-Gen embeddings and contrastive learning</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
+  <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img src="https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg" alt="License"></a>
+  <a href="https://arxiv.org/abs/2501.14951"><img src="https://img.shields.io/badge/arXiv-2501.14951-b31b1b.svg" alt="arXiv"></a>
+</p>
 
 A focused implementation of E-Gen embeddings (Zheng et al., 2025) for mathematical integral similarity search. The system uses transformer-based contrastive learning to find semantically similar integrals from a database of 12,337 unique integrands sourced from Math StackExchange.
 
