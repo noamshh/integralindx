@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 80" width="380" height="80">
+  <style>
+    .logo-text {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-size: 48px;
+      font-weight: 400;
+    }
+    .blue-text { fill: #2563eb; }
+    .dark-text { fill: #1f2937; }
+    @media (prefers-color-scheme: dark) {
+      .dark-text { fill: #f3f4f6; }
+    }
+  </style>
+  <text x="0" y="60" class="logo-text blue-text">∫</text>
+  <text x="45" y="60" class="logo-text">
+    <tspan class="dark-text">IntegralIn</tspan><tspan class="blue-text">dx</tspan>
+  </text>
+</svg>
