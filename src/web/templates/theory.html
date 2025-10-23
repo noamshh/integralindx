@@ -28,7 +28,7 @@
                         style="text-decoration: none; color: #007bff; font-size: 1.2em;">†</a></sup> I spend a lot of time searching for integrals online, mainly on Google and on
                         Math StackExchange. It is often very frustrating because this kind of textual search works well only on very simple integrals,
                         and even then I might miss useful results due to syntactic differences between my query and the seeked results.
-                        This happens because mathematical expressions can be written in many different ways due to several reasons, including: basic mathematical rules
+                        This happens because mathematical expressions can be written in many different ways, due to: basic mathematical rules
                         (commutativity, power rules, etc.), naming conventions (<code>e^x</code> vs. <code>exp(x)</code>, <code>arcsin</code> vs <code>sin^{-1}</code>), or even
                         personal taste in TeX formatting (arbitrary choice of the variable of integration, parameter names, and TeX commands).
                     </p>
@@ -203,7 +203,7 @@
                         <li><strong>Integral Extraction & Validation:</strong> Parse and validate integral expressions
                             <ul>
                                 <li>Advanced parsing for definite and indefinite integrals</li>
-                                <li>SymPy validation to ensure mathematical correctness</li>
+                                <li>SymPy validation to ensure vocabulary compatibility</li>
                                 <li>Quality filtering and deduplication</li>
                                 <li>Result: 26,730 validated integrals</li>
                             </ul>
@@ -249,7 +249,7 @@
                                     <tr><td>Positional Encoding</td><td>Sinusoidal</td></tr>
                                     <tr><td>Pooling Strategy</td><td>Mean</td></tr>
                                     <tr><td>Output Embedding Dimension</td><td>512</td></tr>
-                                    <tr><td>Vocabulary Size</td><td>62 tokens (see <a href="#tokenization">Tokenization section</a>)</td></tr>
+                                    <tr><td>Vocabulary Size</td><td>62 tokens</td></tr>
                                     <tr><td>Total Parameters</td><td>18,946,048 (~19M)</td></tr>
                                 </tbody>
                             </table>
@@ -272,14 +272,14 @@
                     <p>
                         The model is trained using contrastive learning with the InfoNCE loss (temperature=0.1).
                         This is a self-supervised approach: rather than requiring manual labels, the model learns from equivalence clusters generated
-                        automatically via e-graph rewrite rules. Given a query expression and its positive equivalent, the loss maximizes their cosine
+                        via <span style="font-variant: small-caps;">E-Gen</span>. Given a query expression and its positive equivalent, the loss maximizes their cosine
                         similarity while minimizing similarity to negative samples (randomly sampled from other clusters). This forces the encoder to
                         learn representations where mathematically equivalent expressions cluster together in the 512-dimensional embedding space.
                     </p>
 
                     <h5 class="mt-4">Training Data Generation</h5>
                     <p>
-                        Training data was generated through a two-stage pipeline:
+                        Training data was generated through a three-stage pipeline:
                     </p>
 
                     <ol>
@@ -287,7 +287,7 @@
                             <ul>
                                 <li>337 hand-crafted synthetic seeds covering common patterns (polynomials, trig identities, logarithms, etc.)</li>
                                 <li>1,456 expressions extracted from the IntegralIndx database with max token length = 8</li>
-                                <li>Token limit ensures E-Gen can generate rich, diverse equivalents without timing out</li>
+                                <li>Token limit ensures <span style="font-variant: small-caps;">E-Gen</span> can generate diverse equivalents without timing out</li>
                             </ul>
                         </li>
                         <li><strong>E-Gen Equivalence Generation</strong>: Apply <span style="font-variant: small-caps;">E-Gen</span> to each seed. Of the 1,793 seeds,
@@ -398,8 +398,8 @@
             <div class="theory-section mb-5">
                 <h2 class="theory-section-header">Closing Thoughts</h2>
                 <div class="theory-content">
-                    <p> So that's IntegralIndx: from an idea I had years ago to a working semantic search engine built on e-graphs
-                        and contrastive learning. It's far from perfect: the database is still small,
+                    <p> So that's IntegralIndx. From an idea I had years ago, to a working semantic search engine built on e-graphs
+                        and contrastive learning. It's far from perfect - the database is still small,
                         the normalization pipeline could be more efficient, training could be longer,
                         and I'm certain there are parsing errors
                         lurking in edge cases I haven't encountered yet. But it does what I wanted: you can type in
