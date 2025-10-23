@@ -404,7 +404,6 @@ def _split_respecting_environments(s: str) -> List[str]:
                     continue
         # check for line break patterns
         if s[i:i + 2] == '\\\\' or s[i] == '\n' or s.startswith(r'\cr', i):
-            # print(f"DEBUG: Found line break at position {i}")
             if s[i:i + 2] == '\\\\':
                 next_start = i + 2
                 # skip whitespace

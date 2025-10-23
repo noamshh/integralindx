@@ -5,9 +5,11 @@ import traceback
 import uvicorn
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.exceptions import HTTPException
 
 from src.utils.paths import get_paths
 from src.database.integral_db import IntegralDatabase
@@ -23,10 +25,11 @@ logger = logging.getLogger(__name__)
 WEB_DIR = Path(__file__).parent
 search_engine = None
 database = None
+templates = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global search_engine, database
+    global search_engine, database, templates
     try:
         embedder_name = os.environ.get('INTEGRALINDX_EMBEDDER', 'tfidf')
         dev_mode = os.environ.get('INTEGRALINDX_DEV_MODE', 'false').lower() == 'true'
@@ -89,8 +92,10 @@ async def lifespan(app: FastAPI):
             search_engine.save_cache(embedder_name, metadata=metadata)
             logger.info("cache saved successfully")
         templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
+        umami_site_id = os.getenv("UMAMI_SITE_ID", "")
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})
         system.set_search_engine(search_engine)
+        system.set_umami(umami_site_id)
         for router_module in [system, groups, theory]:
             router_module.set_templates(templates)
         groups.set_database(database)
@@ -111,6 +116,12 @@ app.include_router(system.router, tags=["system"])
 app.include_router(search.router, tags=["search"])
 app.include_router(groups.router, tags=["groups"])
 app.include_router(theory.router, tags=["theory"])
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: HTTPException):
+    if templates is None:
+        return HTMLResponse(content="<h1>404 - Page Not Found</h1>", status_code=404)
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
 if (WEB_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
