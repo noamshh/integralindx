@@ -28,13 +28,13 @@ class IntegralSearchApp {
             const response = await fetch('/health');
             const health = await response.json();
             if (!health.search_engine_available) {
-                this.showError('Search engine is not available. Please ensure the embeddings database is set up.');
+                this.showError('Search engine is not available.', false);
             } else if (!health.inference_available) {
-                console.warn('Inference engine not available - new queries will use fallback method');
+                console.warn('Inference engine not available');
             }
         } catch (error) {
             console.error('Health check failed:', error);
-            this.showError('Unable to connect to server');
+            this.showError('Unable to connect to server', false);
         }
     }
 
@@ -58,13 +58,13 @@ class IntegralSearchApp {
         const queryInput = document.getElementById('queryInput');
         const query = queryInput.value.trim();
         if (!query) {
-            this.showError('Please enter an integral expression');
+            this.showError('Please enter an expression', true);
             return;
         }
         const validation = await this.validateQuery(query);
         if (!validation.valid) {
             queryInput.classList.add('is-invalid');
-            this.showError(validation.error || 'Invalid SymPy expression');
+            this.showError(validation.error || 'Invalid SymPy expression', true);
             return;
         }
         queryInput.classList.remove('is-invalid');
@@ -95,11 +95,11 @@ class IntegralSearchApp {
 
                 this.displayResults(result.query, result.results);
             } else {
-                this.showError(result.message || 'Search failed');
+                this.showError(result.message || 'Search failed', true);
             }
         } catch (error) {
             console.error('Search error:', error);
-            this.showError('Network error occurred during search');
+            this.showError('Network error occurred during search', false);
         } finally {
             this.setLoadingState(false);
         }
@@ -117,7 +117,7 @@ class IntegralSearchApp {
         const moreResultsContainer = document.getElementById('moreResultsContainer');
 
         if (results.length === 0) {
-            this.showError('No similar integrals found');
+            this.showError('No similar integrals found', false);
             return;
         }
         resultsCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
@@ -227,7 +227,11 @@ class IntegralSearchApp {
         }
     }
 
-    showError(message) {
+    showError(message, isExpressionError = false) {
+        if (!window.DEV_MODE && !isExpressionError) {
+            console.error(message);
+            return;
+        }
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
         const displayMessage = window.DEV_MODE ? message : 'Invalid expression';
