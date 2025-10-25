@@ -69,6 +69,8 @@ async def lifespan(app: FastAPI):
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})
         system.set_search_engine(search_engine)
         system.set_umami(umami_site_id)
+        groups.set_umami(umami_site_id)
+        theory.set_umami(umami_site_id)
         for router_module in [system, groups, theory]:
             router_module.set_templates(templates)
         groups.set_database(database)

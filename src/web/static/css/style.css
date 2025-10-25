@@ -285,6 +285,14 @@ a .dx-text {
         font-size: 0.7rem !important;
     }
 
+    .footer a {
+        font-size: 0.75rem;
+    }
+
+    .footer .small a {
+        font-size: 0.7rem;
+    }
+
     .about-links {
         display: flex;
         flex-wrap: wrap;

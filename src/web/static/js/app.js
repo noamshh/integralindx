@@ -25,7 +25,7 @@ class IntegralSearchApp {
 
     async checkServerHealth() {
         try {
-            const response = await fetch('/health');
+            const response = await fetch('/healthz');
             const health = await response.json();
             if (!health.search_engine_available) {
                 this.showError('Search engine is not available.', false);

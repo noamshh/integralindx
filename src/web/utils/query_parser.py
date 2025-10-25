@@ -62,6 +62,10 @@ def parse_query_to_sympy_integrand(query: str) -> Tuple[Optional[str], str]:
             is_valid, reason, params = validate_parsed_symbols(stringified, integration_var, debug=False)
             if not is_valid:
                 return None, f'invalid expression: {reason}'
+            all_vars = {str(s) for s in sympify(stringified).free_symbols}
+            multi_letter = {v for v in all_vars if len(v) > 1}
+            if multi_letter:
+                return None, f'multi-letter variables not allowed: {multi_letter}'
         normalized = with_timeout(normalize_sympy_expression, timeout_seconds=2)(query)
         if normalized is None:
             return None, f'failed to parse sympy expression: {query}'

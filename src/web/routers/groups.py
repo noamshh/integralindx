@@ -13,6 +13,7 @@ router = APIRouter()
 database = None  # IntegralDatabase instance (set by main.py)
 templates: Optional[Jinja2Templates] = None
 dev_mode: bool = False
+umami_site_id: str = ""
 
 
 def set_database(db):
@@ -29,6 +30,10 @@ def set_dev_mode(enabled: bool):
     global dev_mode
     dev_mode = enabled
     logger.info(f"Developer mode: {'enabled' if enabled else 'disabled'}")
+
+def set_umami(site_id: str):
+    global umami_site_id
+    umami_site_id = site_id
 
 def get_group_id_by_integral_id(integral_id: str) -> Optional[str]:
     if database is None:
@@ -142,7 +147,8 @@ async def view_group(request: Request, integrand_hash: str):
             "instances": instances,
             "mse_links": mse_links,
             "closed_forms": closed_forms,
-            "dev_mode": dev_mode
+            "dev_mode": dev_mode,
+            "umami_site_id": umami_site_id
         }
     )
 
