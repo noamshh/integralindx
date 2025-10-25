@@ -14,7 +14,6 @@ from fastapi.exceptions import HTTPException
 from src.utils.paths import get_paths
 from src.database.integral_db import IntegralDatabase
 from src.web.routers import search, system, groups, theory
-from src.models.baseline import BaselineEmbedder
 from src.models.egen.contrastive_embedder import CLEmbedder
 from src.search.similarity_engine import IntegrandGroupSearch
 from src.search import embedding_cache
