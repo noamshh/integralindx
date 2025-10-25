@@ -444,8 +444,10 @@ a.text-primary:hover {
     line-height: 1.4;
 }
 .functions-content code {
+    color: var(--primary-blue-darker);
     font-size: 0.75rem;
     padding: 0.1rem 0.3rem;
+    background: var(--bg-white);
 }
 .closed-forms-container {
     max-height: 300px;
