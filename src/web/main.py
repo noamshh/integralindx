@@ -59,8 +59,8 @@ async def lifespan(app: FastAPI):
             config_path = Path(config_path_str) if config_path_str else None
             logger.info(f"loading E-Gen model from: {checkpoint_path}")
             embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
-        search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder)
-        logger.info(f"search engine loaded from cache: {len(search_engine.groups)} groups")
+        search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder, database)
+        logger.info(f"search engine loaded from cache")
         templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
         umami_site_id = os.getenv("UMAMI_SITE_ID", "")
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})

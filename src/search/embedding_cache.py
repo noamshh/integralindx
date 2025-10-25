@@ -24,9 +24,9 @@ def cache_exists(embedder_name: str) -> bool:
     if not cache_dir.exists():
         return False
     index_path = cache_dir / 'index.faiss'
-    groups_path = cache_dir / 'groups.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
     metadata_path = cache_dir / 'metadata.json'
-    return index_path.exists() and groups_path.exists() and metadata_path.exists()
+    return index_path.exists() and hash_mapping_path.exists() and metadata_path.exists()
 
 
 def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: str,
@@ -42,15 +42,16 @@ def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: s
     cache_dir = get_cache_dir(embedder_name)
     cache_dir.mkdir(parents=True, exist_ok=True)
     index_path = cache_dir / 'index.faiss'
-    groups_path = cache_dir / 'groups.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
     metadata_path = cache_dir / 'metadata.json'
     embedder_path = cache_dir / 'embedder.json'
     logger.info(f"saving embedding cache to {cache_dir}")
     faiss.write_index(search_engine.index, str(index_path))
     logger.info(f"saved FAISS index: {index_path}")
-    with open(groups_path, 'wb') as f:
-        pickle.dump(search_engine.groups, f)
-    logger.info(f"saved {len(search_engine.groups)} groups: {groups_path}")
+    index_to_hash = {idx: group.integrand_hash for idx, group in enumerate(search_engine.groups)}
+    with open(hash_mapping_path, 'wb') as f:
+        pickle.dump(index_to_hash, f)
+    logger.info(f"saved index->hash mapping: {hash_mapping_path} ({len(index_to_hash)} entries)")
     embedder_saved = False
     if search_engine.embedder and hasattr(search_engine.embedder, 'save'):
         try:
@@ -70,7 +71,11 @@ def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: s
         'embedder_class': search_engine.embedder.__class__.__name__ if search_engine.embedder else None,
     }
     if metadata:
-        cache_metadata.update(metadata)
+        for key, value in metadata.items():
+            if isinstance(value, (str, Path)) and ('path' in key.lower() or 'dir' in key.lower()):
+                cache_metadata[key] = Path(value).as_posix()
+            else:
+                cache_metadata[key] = value
     with open(metadata_path, 'w') as f:
         json.dump(cache_metadata, f, indent=2)
     logger.info(f"saved metadata: {metadata_path}")
@@ -78,36 +83,35 @@ def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: s
     return cache_dir
 
 
-def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None) -> 'IntegrandGroupSearch':
-    # local import to avoid circular import
+def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None, database: Optional[Any] = None) -> 'IntegrandGroupSearch':
     from src.search.similarity_engine import IntegrandGroupSearch
     cache_dir = get_cache_dir(embedder_name)
     if not cache_dir.exists():
         raise FileNotFoundError(f"embedding cache not found: {cache_dir}")
     index_path = cache_dir / 'index.faiss'
-    groups_path = cache_dir / 'groups.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
     metadata_path = cache_dir / 'metadata.json'
     embedder_path = cache_dir / 'embedder.json'
     if not index_path.exists():
         raise FileNotFoundError(f"FAISS index not found: {index_path}")
-    if not groups_path.exists():
-        raise FileNotFoundError(f"groups file not found: {groups_path}")
+    if not hash_mapping_path.exists():
+        raise FileNotFoundError(f"hash mapping not found: {hash_mapping_path}")
     if not metadata_path.exists():
         logger.warning(f"metadata file not found: {metadata_path}")
     logger.info(f"loading embedding cache from {cache_dir}")
     with open(metadata_path, 'r') as f:
         metadata = json.load(f)
     logger.info(f"cache metadata: {metadata}")
-    with open(groups_path, 'rb') as f:
-        groups = pickle.load(f)
-    logger.info(f"loaded {len(groups)} groups")
+    with open(hash_mapping_path, 'rb') as f:
+        index_to_hash = pickle.load(f)
+    logger.info(f"loaded index->hash mapping: {len(index_to_hash)} entries")
     embedding_dim = metadata.get('embedding_dim', 384)
     index_type = metadata.get('index_type', 'flat')
-    search_engine = IntegrandGroupSearch(embedding_dim=embedding_dim, index_type=index_type)
-    index = faiss.read_index(str(index_path))
+    search_engine = IntegrandGroupSearch(embedding_dim=embedding_dim, index_type=index_type, database=database)
+    index = faiss.read_index(str(index_path), faiss.IO_FLAG_MMAP | faiss.IO_FLAG_READ_ONLY)
     search_engine.index = index
-    logger.info(f"loaded FAISS index: {index.ntotal} vectors")
-    search_engine.groups = groups
+    logger.info(f"loaded FAISS index (mmap): {index.ntotal} vectors")
+    search_engine.index_to_hash = index_to_hash
     if embedder_path.exists() and embedder is None:
         try:
             embedder = BaselineEmbedder.load(embedder_path)
@@ -115,9 +119,6 @@ def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None) -> 
         except Exception as e:
             logger.warning(f"failed to load embedder from cache: {e}")
     search_engine.embedder = embedder
-    for idx, group in enumerate(groups):
-        search_engine._id_to_idx[group.id] = idx
-        search_engine._hash_to_idx[group.integrand_hash] = idx
     logger.info(f"embedding cache loaded successfully from {cache_dir}")
     return search_engine
 

@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 class IntegrandGroupSearch:
     """FAISS-based similarity search for integrand groups.
     Each group represents a unique canonical integrand with multiple instances."""
-    def __init__(self, embedding_dim, index_type: str = 'flat'):
+    def __init__(self, embedding_dim, index_type: str = 'flat', database=None):
         self.embedding_dim = embedding_dim
         self.index_type = index_type
         self.index = None
         self.groups: List[IntegrandGroup] = []
         self.embedder: Optional[BaseEmbedder] = None
-        self._id_to_idx = {}  # mapping from group ID to index position
-        self._hash_to_idx = {}  # mapping from integrand_hash to index position
+        self.database = database
+        self.index_to_hash = {}
         if index_type == 'flat':
             self.index = faiss.IndexFlatIP(embedding_dim)
         else:
@@ -70,22 +70,34 @@ class IntegrandGroupSearch:
         embedder = embedder or self.embedder
         if embedder is None:
             raise ValueError("no embedder provided and index not built")
-        # normalize query parameters to match dataset canonicalization
+        # normalize
         normalized_query = normalize_parameters(query, integration_var='x')
         logger.debug(f"normalized query: '{query}' → '{normalized_query}'")
-        # encode normalized query
+        # embed
         query_embedding = embedder.encode([normalized_query])
         query_embedding = query_embedding.astype(np.float32)
         faiss.normalize_L2(query_embedding)
         # search
         scores, indices = self.index.search(query_embedding, k)
-        # format results
         results = []
         for score, idx in zip(scores[0], indices[0]):
-            if idx == -1:  # no more results
+            if idx == -1:
                 break
-            group = self.groups[idx]
-            total_instances = len(group.definite_instances) + len(group.indefinite_instances)
+            integrand_hash = self.index_to_hash.get(idx)
+            if not integrand_hash:
+                continue
+            if self.database:
+                group = self.database.get_group_by_hash(integrand_hash, exclude_curated=True)
+                if not group:
+                    continue
+                total_instances = len(group.definite_instances) + len(group.indefinite_instances)
+                unique_mse_questions = len(group.unique_mse_questions) if hasattr(group, 'unique_mse_questions') else 0
+                latex_variants = group.latex_variants[:3] if hasattr(group, 'latex_variants') else []
+            else:
+                group = self.groups[idx]
+                total_instances = len(group.definite_instances) + len(group.indefinite_instances)
+                unique_mse_questions = len(group.unique_mse_questions)
+                latex_variants = group.latex_variants[:3]
             results.append({
                 'group_id': group.id,
                 'integrand_canonical': group.integrand_canonical,
@@ -95,17 +107,21 @@ class IntegrandGroupSearch:
                 'total_instances': total_instances,
                 'definite_count': len(group.definite_instances),
                 'indefinite_count': len(group.indefinite_instances),
-                'unique_mse_questions': len(group.unique_mse_questions),
-                'latex_variants': group.latex_variants[:3],  # show first 3
+                'unique_mse_questions': unique_mse_questions,
+                'latex_variants': latex_variants,
                 'similarity_score': float(score)
             })
         return results
 
     def get_group_by_hash(self, integrand_hash: str) -> Optional[Dict]:
-        if integrand_hash not in self._hash_to_idx:
-            return None
-        idx = self._hash_to_idx[integrand_hash]
-        group = self.groups[idx]
+        if self.database:
+            group = self.database.get_group_by_hash(integrand_hash, exclude_curated=True)
+            if not group:
+                return None
+        else:
+            group = next((g for g in self.groups if g.integrand_hash == integrand_hash), None)
+            if not group:
+                return None
         return {
             'group_id': group.id,
             'integrand_canonical': group.integrand_canonical,
@@ -115,21 +131,26 @@ class IntegrandGroupSearch:
             'total_instances': len(group.definite_instances) + len(group.indefinite_instances),
             'definite_count': len(group.definite_instances),
             'indefinite_count': len(group.indefinite_instances),
-            'unique_mse_questions': len(group.unique_mse_questions),
-            'latex_variants': group.latex_variants,
+            'unique_mse_questions': len(group.unique_mse_questions) if hasattr(group, 'unique_mse_questions') else 0,
+            'latex_variants': group.latex_variants if hasattr(group, 'latex_variants') else [],
             'definite_instances': group.definite_instances,
             'indefinite_instances': group.indefinite_instances,
             'instances': []
         }
 
     def get_statistics(self) -> Dict:
-        total_instances = sum(
-            len(g.definite_instances) + len(g.indefinite_instances)
-            for g in self.groups
-        )
+        if self.database:
+            total_groups = self.database.count_groups(exclude_curated=True)
+            total_instances = self.database.count_instances(exclude_curated=True)
+        else:
+            total_groups = len(self.groups)
+            total_instances = sum(
+                len(g.definite_instances) + len(g.indefinite_instances)
+                for g in self.groups
+            )
         return {
             'available': True,
-            'total_groups': len(self.groups),
+            'total_groups': total_groups,
             'total_instances': total_instances,
             'index_size': self.index.ntotal if self.index else 0,
             'embedding_dim': self.embedding_dim,
@@ -140,5 +161,5 @@ class IntegrandGroupSearch:
         save_embedding_cache(self, embedder_name, metadata)
 
     @classmethod
-    def load_cache(cls, embedder_name: str, embedder=None) -> 'IntegrandGroupSearch':
-        return load_embedding_cache(embedder_name, embedder)
+    def load_cache(cls, embedder_name: str, embedder=None, database=None) -> 'IntegrandGroupSearch':
+        return load_embedding_cache(embedder_name, embedder, database)
