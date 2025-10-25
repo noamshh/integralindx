@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}IntegralIndx{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     {% if umami_site_id %}<script defer src="https://analytics-integralindx.fly.dev/script.js" data-website-id="{{ umami_site_id }}"></script>{% endif %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script>
@@ -33,15 +34,15 @@
                     <p class="text-muted small mb-2">
                         Personal Research Demonstration • Non-Commercial Use Only
                     </p>
-                    <p class="text-muted small mb-2" style="font-size: 0.8rem;">
+                    <p class="text-muted small mb-2">
                         Licensed under <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" class="text-muted">CC BY-NC-SA 4.0</a> •
                         Data from <a href="https://math.stackexchange.com" target="_blank" class="text-muted">Math StackExchange</a> •
                         Based on <a href="https://arxiv.org/abs/2501.14951" target="_blank" class="text-muted">E-Gen (Zheng et al., 2025)</a>
                     </p>
-                    <p class="text-muted small" style="font-size: 0.75rem;">
+                    <p class="text-muted small">
                         No warranty provided. Verify all results independently.
                     </p>
-                    {% if umami_site_id %}<p class="text-muted small" style="font-size: 0.75rem;">Privacy-respecting analytics (no cookies, no tracking)</p>{% endif %}
+                    {% if umami_site_id %}<p class="text-muted small">Privacy-respecting analytics (no cookies, no tracking)</p>{% endif %}
                     <p class="text-muted small">
                         © 2025 IntegralIndx •
                         <a href="https://github.com/noamshh/IntegralIndx" target="_blank" class="text-muted">GitHub</a> •

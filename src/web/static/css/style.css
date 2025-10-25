@@ -286,11 +286,11 @@ a .dx-text {
     }
 
     .footer a {
-        font-size: 0.75rem;
+        font-size: 0.75rem !important;
     }
 
     .footer .small a {
-        font-size: 0.7rem;
+        font-size: 0.7rem !important;
     }
 
     .about-links {

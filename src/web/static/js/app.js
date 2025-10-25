@@ -26,11 +26,8 @@ class IntegralSearchApp {
     async checkServerHealth() {
         try {
             const response = await fetch('/healthz');
-            const health = await response.json();
-            if (!health.search_engine_available) {
-                this.showError('Search engine is not available.', false);
-            } else if (!health.inference_available) {
-                console.warn('Inference engine not available');
+            if (!response.ok) {
+                this.showError('Unable to connect to server', false);
             }
         } catch (error) {
             console.error('Health check failed:', error);
