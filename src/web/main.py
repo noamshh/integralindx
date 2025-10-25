@@ -35,16 +35,18 @@ async def lifespan(app: FastAPI):
         paths = get_paths()
         db_path = Path(paths['data']['integral_db'])
         if not db_path.exists():
-            logger.error(f"database not found: {db_path}")
-            return
+            msg = f"database not found: {db_path}"
+            logger.error(msg)
+            raise RuntimeError(msg)
         database = IntegralDatabase(db_path, fallback_to_jsonl=False)
         logger.info(f"loaded {database.count_groups(exclude_curated=False):,} groups, "
                    f"{database.count_instances(exclude_curated=False):,} instances")
         is_baseline = embedder_name in ['tfidf', 'sentence_bert']
         if not embedding_cache.cache_exists(embedder_name):
-            logger.error(f"embedding cache not found: {embedder_name}")
+            msg = f"embedding cache not found: {embedder_name}"
+            logger.error(msg)
             logger.error(f"pre-build cache with: python scripts/build_embedding_cache.py --embedder {embedder_name}")
-            return
+            raise RuntimeError(msg)
 
         logger.info(f"loading embedding cache: {embedder_name}")
         cache_info = embedding_cache.get_cache_info(embedder_name)
@@ -53,8 +55,9 @@ async def lifespan(app: FastAPI):
         if not is_baseline:
             checkpoint_path = Path(cache_info.get('checkpoint_path'))
             if not checkpoint_path.exists():
-                logger.error(f"checkpoint not found: {checkpoint_path}")
-                return
+                msg = f"checkpoint not found: {checkpoint_path}"
+                logger.error(msg)
+                raise RuntimeError(msg)
             config_path_str = cache_info.get('config_path')
             config_path = Path(config_path_str) if config_path_str else None
             logger.info(f"loading E-Gen model from: {checkpoint_path}")
@@ -76,6 +79,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"initialization failed: {e}")
         traceback.print_exc()
+        raise
     yield
     logger.info("shutting down...")
 

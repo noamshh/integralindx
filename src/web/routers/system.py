@@ -40,6 +40,10 @@ async def home(request: Request):
         "umami_site_id": umami_site_id
     })
 
+@router.get("/healthz")
+async def healthz():
+    return JSONResponse({"status": "ok"})
+
 @router.get("/health")
 async def health_check(x_health_token: str = Header(None)):
     if x_health_token != HEALTH_TOKEN:
