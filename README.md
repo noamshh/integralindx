@@ -13,6 +13,14 @@
 
 A focused implementation of E-Gen embeddings (Zheng et al., 2025) for mathematical integral similarity search. The system uses transformer-based contrastive learning to find semantically similar integrals from a database of 12,337 unique integrands sourced from Math StackExchange.
 
+<p align="center">
+  <img src="src/web/static/images/search-example.svg" alt="IntegralIndx Search Example" width="800">
+</p>
+
+<p align="center">
+ <span style="font-size: 1.2em;">Live demo: <a href="https://integralindx.fly.dev">integralindx.fly.dev</a> · Further reading: <a href="https://integralindx.fly.dev/theory">theory page</a></span>
+</p>
+
 ---
 
 
