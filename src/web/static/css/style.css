@@ -284,6 +284,24 @@ a .dx-text {
     .footer .small {
         font-size: 0.7rem !important;
     }
+
+    .about-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .about-links .btn {
+        margin: 0 !important;
+    }
+
+    .about-links .btn:first-child {
+        width: 100%;
+    }
+
+    .about-links .btn:not(:first-child) {
+        width: calc(50% - 0.25rem);
+    }
 }
 .spinner-border-sm {
     width: 1rem;
