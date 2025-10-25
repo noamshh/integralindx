@@ -33,16 +33,22 @@
                             </label>
                             <input type="text" class="form-control search-input" id="queryInput"
                                    placeholder="e.g., log(sin(x))" required maxlength="200">
-                            <div class="form-text format-help" id="formatHelp" style="font-size: 0.75rem; line-height: 1.4;">
-                                <strong>Allowed Functions:</strong>
-                                Trig: <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>cot</code>, <code>sec</code>, <code>csc</code>
-                                Inverse Trig: <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>acot</code>, <code>asec</code>, <code>acsc</code>
-                                Hyperbolic: <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>coth</code>, <code>sech</code>, <code>csch</code>
-                                Inverse Hyperbolic: <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>acoth</code>, <code>asech</code>, <code>acsch</code>
-                                Other: <code>exp</code>, <code>log</code>, <code>abs</code>, <code>sqrt</code>, <code>polylog</code>, <code>zeta</code>
-                                <strong>Allowed Constants:</strong> <code>pi</code>, <code>E</code>
-                                <strong>Allowed Parameters:</strong> max 3 from <code>a</code>, <code>b</code>, <code>c</code>
-                                <br><strong>Examples:</strong> <code>log(sin(x))</code>, <code>1/(a**2 + x**2)</code>, <code>x**a * log(x)</code>, <code>polylog(2, x)</code>, <code>exp(-x)</code>
+                            <div class="functions-card">
+                                <div class="functions-header" onclick="toggleFunctions()">
+                                    <span class="functions-title">Allowed Functions & Examples</span>
+                                    <span id="functionsToggle" class="functions-toggle">▼</span>
+                                </div>
+                                <div id="functionsContent" class="functions-content">
+                                    <strong>Functions:</strong>
+                                    Trig: <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>cot</code>, <code>sec</code>, <code>csc</code>
+                                    Inverse Trig: <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>acot</code>, <code>asec</code>, <code>acsc</code>
+                                    Hyperbolic: <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>coth</code>, <code>sech</code>, <code>csch</code>
+                                    Inverse Hyperbolic: <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>acoth</code>, <code>asech</code>, <code>acsch</code>
+                                    Other: <code>exp</code>, <code>log</code>, <code>abs</code>, <code>sqrt</code>, <code>polylog</code>, <code>zeta</code>
+                                    <strong>Constants:</strong> <code>pi</code>, <code>E</code>
+                                    <strong>Parameters:</strong> max 3 from <code>a</code>, <code>b</code>, <code>c</code>
+                                    <br><strong>Examples:</strong> <code>log(sin(x))</code>, <code>1/(a**2 + x**2)</code>, <code>x**a * log(x)</code>, <code>polylog(2, x)</code>, <code>exp(-x)</code>
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary search-button w-100">
@@ -138,6 +144,18 @@
 </script>
 <script src="/static/js/app.js"></script>
 <script>
+function toggleFunctions() {
+    const content = document.getElementById('functionsContent');
+    const toggle = document.getElementById('functionsToggle');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▲';
+    } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼';
+    }
+}
+
 function toggleAbout() {
     const content = document.getElementById('aboutContent');
     const toggle = document.getElementById('aboutToggle');
@@ -151,6 +169,7 @@ function toggleAbout() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('functionsContent').style.display = 'none';
     document.getElementById('aboutContent').style.display = 'none';
     // Auto-hide theory button
     const theoryBadge = document.querySelector('.theory-nav-badge');
