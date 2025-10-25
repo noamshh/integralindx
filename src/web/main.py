@@ -42,55 +42,26 @@ async def lifespan(app: FastAPI):
         logger.info(f"loaded {database.count_groups(exclude_curated=False):,} groups, "
                    f"{database.count_instances(exclude_curated=False):,} instances")
         is_baseline = embedder_name in ['tfidf', 'sentence_bert']
-        if embedding_cache.cache_exists(embedder_name):
-            logger.info(f"loading embedding cache: {embedder_name}")
-            cache_info = embedding_cache.get_cache_info(embedder_name)
-            logger.info(f"cache info: {cache_info}")
-            embedder = None
-            if not is_baseline:
-                checkpoint_path = Path(cache_info.get('checkpoint_path'))
-                if not checkpoint_path.exists():
-                    logger.error(f"checkpoint not found: {checkpoint_path}")
-                    return
-                config_path_str = cache_info.get('config_path')
-                config_path = Path(config_path_str) if config_path_str else None
-                logger.info(f"loading E-Gen model from: {checkpoint_path}")
-                embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
-            search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder)
-            logger.info(f"search engine loaded from cache: {len(search_engine.groups)} groups")
-        else:
-            logger.warning(f"embedding cache not found: {embedder_name}")
-            logger.info("building index...")
-            logger.info(f"tip: pre-build cache with: python scripts/build_embedding_cache.py --embedder {embedder_name}")
-            all_groups = database.get_all_groups(limit=20000, exclude_curated=True)
-            if is_baseline:
-                embedding_dim = 384
-                embedder = BaselineEmbedder(method=embedder_name, embedding_dim=embedding_dim)
-                if embedder_name == 'tfidf':
-                    logger.info("fitting TF-IDF on canonical integrands...")
-                    embedder.fit([g.integrand_canonical for g in all_groups])
-                metadata = {'embedder_type': 'baseline', 'method': embedder_name}
-            else:
-                checkpoint_path = paths['models']['checkpoints'] / embedder_name / 'best_model.pt'
-                if not checkpoint_path.exists():
-                    logger.error(f"checkpoint not found: {checkpoint_path}")
-                    return
-                config_path = paths['project_root'] / 'config' / 'model' / 'ii-cl-19m.yaml'
-                logger.info(f"loading E-Gen model from: {checkpoint_path}")
-                logger.info(f"using default config: {config_path}")
-                embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
-                embedding_dim = embedder.embedding_dim
-                metadata = {'embedder_type': 'egen', 'checkpoint_path': str(checkpoint_path), 'config_path': str(config_path)}
-            search_engine = IntegrandGroupSearch(embedding_dim=embedding_dim, index_type='flat')
-            search_engine.groups = all_groups
-            for idx, group in enumerate(all_groups):
-                search_engine._id_to_idx[group.id] = idx
-                search_engine._hash_to_idx[group.integrand_hash] = idx
-            search_engine.build_index(embedder, batch_size=100)
-            logger.info(f"search engine ready: {len(all_groups)} groups, {embedder_name} embedder")
-            logger.info("saving embedding cache for future startups...")
-            search_engine.save_cache(embedder_name, metadata=metadata)
-            logger.info("cache saved successfully")
+        if not embedding_cache.cache_exists(embedder_name):
+            logger.error(f"embedding cache not found: {embedder_name}")
+            logger.error(f"pre-build cache with: python scripts/build_embedding_cache.py --embedder {embedder_name}")
+            return
+
+        logger.info(f"loading embedding cache: {embedder_name}")
+        cache_info = embedding_cache.get_cache_info(embedder_name)
+        logger.info(f"cache info: {cache_info}")
+        embedder = None
+        if not is_baseline:
+            checkpoint_path = Path(cache_info.get('checkpoint_path'))
+            if not checkpoint_path.exists():
+                logger.error(f"checkpoint not found: {checkpoint_path}")
+                return
+            config_path_str = cache_info.get('config_path')
+            config_path = Path(config_path_str) if config_path_str else None
+            logger.info(f"loading E-Gen model from: {checkpoint_path}")
+            embedder = CLEmbedder.load(checkpoint_path, config_path=config_path)
+        search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder)
+        logger.info(f"search engine loaded from cache: {len(search_engine.groups)} groups")
         templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
         umami_site_id = os.getenv("UMAMI_SITE_ID", "")
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})

@@ -525,11 +525,6 @@ code {
 
 @media (max-width: 768px) {
     .theory-nav-badge {
-        top: 1rem;
-        right: 1rem;
-    }
-    .theory-nav-badge a {
-        padding: 0.4rem 0.75rem;
-        font-size: 0.85rem;
+        display: none;
     }
 }
