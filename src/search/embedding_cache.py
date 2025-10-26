@@ -3,11 +3,11 @@ import pickle
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from datetime import datetime
 import faiss
 
 from src.models.baseline import BaselineEmbedder
 from src.utils.paths import get_paths
+from src.utils.provenance import now_iso
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: s
         'total_groups': len(search_engine.groups),
         'index_size': search_engine.index.ntotal,
         'embedder_saved': embedder_saved,
-        'created_at': datetime.utcnow().isoformat(),
+        'created_at': now_iso(),
         'embedder_class': search_engine.embedder.__class__.__name__ if search_engine.embedder else None,
     }
     if metadata:
