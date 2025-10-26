@@ -107,7 +107,7 @@ class IntegralSearchApp {
         await this.performSearch(false); // false = not a new search
     }
 
-    displayResults(query, results) {
+    displayResults(query, results, scrollToResults = true) {
         const resultsSection = document.getElementById('resultsSection');
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsCount = document.getElementById('resultsCount');
@@ -130,7 +130,9 @@ class IntegralSearchApp {
             moreResultsContainer.classList.add('d-none');
         }
         resultsSection.classList.remove('d-none');
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (scrollToResults) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
         if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
             MathJax.typesetPromise([resultsContainer]).catch(() => {
             });
@@ -274,7 +276,12 @@ class IntegralSearchApp {
             this.currentK = searchData.k || 6;
             this.currentQuery = searchData.query || null;
             if (searchData.results && searchData.results.length > 0) {
-                this.displayResults(searchData.query, searchData.results);
+                const scrollToTop = sessionStorage.getItem('scrollToTop') === 'true';
+                this.displayResults(searchData.query, searchData.results, !scrollToTop);
+                if (scrollToTop) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    sessionStorage.removeItem('scrollToTop');
+                }
             }
         } catch (e) {
             console.error('Failed to restore search state:', e);
