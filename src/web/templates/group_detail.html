@@ -199,6 +199,7 @@
 
 {% block extra_scripts %}
 {% if dev_mode %}
+<input type="hidden" id="dev-token-value" value="{{ dev_token }}">
 <script>
     function removeInstance(instanceId, integrandHash) {
         const reason = prompt('Reason for removal (required):');
@@ -209,21 +210,21 @@
         if (!confirm(`Are you sure you want to remove instance ${instanceId}?\n\nReason: ${reason}`)) {
             return;
         }
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/integrand/${integrandHash}/remove-instance`;
-        const instanceInput = document.createElement('input');
-        instanceInput.type = 'hidden';
-        instanceInput.name = 'instance_id';
-        instanceInput.value = instanceId;
-        form.appendChild(instanceInput);
-        const reasonInput = document.createElement('input');
-        reasonInput.type = 'hidden';
-        reasonInput.name = 'reason';
-        reasonInput.value = reason;
-        form.appendChild(reasonInput);
-        document.body.appendChild(form);
-        form.submit();
+        const devToken = document.getElementById('dev-token-value').value;
+        const formData = new FormData();
+        formData.append('instance_id', instanceId);
+        formData.append('reason', reason);
+        fetch(`/integrand/${integrandHash}/remove-instance`, {
+            method: 'POST',
+            headers: { 'X-Dev-Token': devToken },
+            body: formData,
+        }).then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (!response.ok) {
+                return response.json().then(e => { throw new Error(e.detail || 'Request failed'); });
+            }
+        }).catch(err => alert('Error: ' + err.message));
     }
 </script>
 {% endif %}

@@ -18,9 +18,10 @@ class IntegralDatabase:
     Args:
         db_path: path to SQLite database file
         fallback_to_jsonl: if True, fall back to jsonl loading if database doesn't exist"""
-    def __init__(self, db_path: Path, fallback_to_jsonl: bool = True):
+    def __init__(self, db_path: Path, fallback_to_jsonl: bool = True, read_only: bool = False):
         self.db_path = db_path
         self.fallback_to_jsonl = fallback_to_jsonl
+        self.read_only = read_only
         self.engine = None
         self.Session = None
         if db_path.exists():
@@ -31,13 +32,15 @@ class IntegralDatabase:
             logger.warning(f"database not found: {db_path}, will fall back to jsonl if needed")
 
     def _init_database(self):
-        self.engine = create_engine(
-            f'sqlite:///{self.db_path}',
-            connect_args={'check_same_thread': False},
-            poolclass=StaticPool
-        )
+        if self.read_only:
+            url = f'sqlite:///file:{self.db_path}?mode=ro&uri=true'
+            connect_args = {'check_same_thread': False, 'uri': True}
+        else:
+            url = f'sqlite:///{self.db_path}'
+            connect_args = {'check_same_thread': False}
+        self.engine = create_engine(url, connect_args=connect_args, poolclass=StaticPool)
         self.Session = sessionmaker(bind=self.engine)
-        logger.info(f"initialized database connection: {self.db_path}")
+        logger.info(f"initialized database connection: {self.db_path} (read_only={self.read_only})")
 
     def create_tables(self):
         if self.engine is None:

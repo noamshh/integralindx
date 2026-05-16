@@ -1,4 +1,5 @@
 import os
+import secrets
 import logging
 import argparse
 import traceback
@@ -38,13 +39,17 @@ async def lifespan(app: FastAPI):
     try:
         embedder_name = os.environ.get('INTEGRALINDX_EMBEDDER', 'tfidf')
         dev_mode = os.environ.get('INTEGRALINDX_DEV_MODE', 'false').lower() == 'true'
+        if dev_mode:
+            logger.warning("=" * 60)
+            logger.warning("DEVELOPER MODE IS ENABLED — DO NOT USE IN PRODUCTION")
+            logger.warning("=" * 60)
         paths = get_paths()
         db_path = Path(paths['data']['integral_db'])
         if not db_path.exists():
             msg = f"database not found: {db_path}"
             logger.error(msg)
             raise RuntimeError(msg)
-        database = IntegralDatabase(db_path, fallback_to_jsonl=False)
+        database = IntegralDatabase(db_path, fallback_to_jsonl=False, read_only=not dev_mode)
         logger.info(f"loaded {database.count_groups(exclude_curated=False):,} groups, "
                    f"{database.count_instances(exclude_curated=False):,} instances")
         is_baseline = embedder_name in ['tfidf', 'sentence_bert']
@@ -83,6 +88,16 @@ async def lifespan(app: FastAPI):
         groups.set_dev_mode(dev_mode)
         system.set_dev_mode(dev_mode)
         search.set_dev_mode(dev_mode)
+        dev_token = None
+        if dev_mode:
+            env_token = os.environ.get('INTEGRALINDX_DEV_TOKEN')
+            if env_token:
+                dev_token = env_token
+                logger.warning("Using INTEGRALINDX_DEV_TOKEN from environment")
+            else:
+                dev_token = secrets.token_hex(32)
+                logger.warning(f"DEV MODE ephemeral token (set INTEGRALINDX_DEV_TOKEN to persist): {dev_token}")
+        groups.set_dev_token(dev_token)
 
     except Exception as e:
         logger.error(f"initialization failed: {e}")
@@ -93,6 +108,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="IntegralIndx - Integral Similarity Search", description="Search through Math StackExchange integrals",
               version="1.0.0", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://analytics-integralindx.fly.dev 'unsafe-inline'; "
+        "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self' https://cdn.jsdelivr.net data:; "
+        "connect-src 'self' https://analytics-integralindx.fly.dev; "
+        "frame-ancestors 'none'"
+    )
+    return response
+
 
 app.include_router(system.router, tags=["system"])
 app.include_router(search.router, tags=["search"])

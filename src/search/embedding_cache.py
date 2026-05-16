@@ -1,5 +1,4 @@
 import json
-import pickle
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -24,7 +23,7 @@ def cache_exists(embedder_name: str) -> bool:
     if not cache_dir.exists():
         return False
     index_path = cache_dir / 'index.faiss'
-    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.json'
     metadata_path = cache_dir / 'metadata.json'
     return index_path.exists() and hash_mapping_path.exists() and metadata_path.exists()
 
@@ -42,15 +41,15 @@ def save_embedding_cache(search_engine: 'IntegrandGroupSearch', embedder_name: s
     cache_dir = get_cache_dir(embedder_name)
     cache_dir.mkdir(parents=True, exist_ok=True)
     index_path = cache_dir / 'index.faiss'
-    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.json'
     metadata_path = cache_dir / 'metadata.json'
     embedder_path = cache_dir / 'embedder.json'
     logger.info(f"saving embedding cache to {cache_dir}")
     faiss.write_index(search_engine.index, str(index_path))
     logger.info(f"saved FAISS index: {index_path}")
-    index_to_hash = {idx: group.integrand_hash for idx, group in enumerate(search_engine.groups)}
-    with open(hash_mapping_path, 'wb') as f:
-        pickle.dump(index_to_hash, f)
+    index_to_hash = {str(idx): group.integrand_hash for idx, group in enumerate(search_engine.groups)}
+    with open(hash_mapping_path, 'w', encoding='utf-8') as f:
+        json.dump(index_to_hash, f)
     logger.info(f"saved index->hash mapping: {hash_mapping_path} ({len(index_to_hash)} entries)")
     embedder_saved = False
     if search_engine.embedder and hasattr(search_engine.embedder, 'save'):
@@ -89,7 +88,7 @@ def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None, dat
     if not cache_dir.exists():
         raise FileNotFoundError(f"embedding cache not found: {cache_dir}")
     index_path = cache_dir / 'index.faiss'
-    hash_mapping_path = cache_dir / 'index_to_hash.pkl'
+    hash_mapping_path = cache_dir / 'index_to_hash.json'
     metadata_path = cache_dir / 'metadata.json'
     embedder_path = cache_dir / 'embedder.json'
     if not index_path.exists():
@@ -102,8 +101,8 @@ def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None, dat
     with open(metadata_path, 'r') as f:
         metadata = json.load(f)
     logger.info(f"cache metadata: {metadata}")
-    with open(hash_mapping_path, 'rb') as f:
-        index_to_hash = pickle.load(f)
+    with open(hash_mapping_path, 'r', encoding='utf-8') as f:
+        index_to_hash = {int(k): v for k, v in json.load(f).items()}
     logger.info(f"loaded index->hash mapping: {len(index_to_hash)} entries")
     embedding_dim = metadata.get('embedding_dim', 384)
     index_type = metadata.get('index_type', 'flat')

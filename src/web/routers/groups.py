@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request, Form
+from fastapi import APIRouter, HTTPException, Request, Form, Header, Path as PathParam
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+import hmac
 import logging
 from typing import List, Dict, Optional
-from sympy import sympify
 from sympy.printing import latex
+from src.utils.safe_math import safe_sympify
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -13,6 +14,7 @@ router = APIRouter()
 database = None  # IntegralDatabase instance (set by main.py)
 templates: Optional[Jinja2Templates] = None
 dev_mode: bool = False
+dev_token: Optional[str] = None
 umami_site_id: str = ""
 
 
@@ -31,9 +33,21 @@ def set_dev_mode(enabled: bool):
     dev_mode = enabled
     logger.info(f"Developer mode: {'enabled' if enabled else 'disabled'}")
 
+def set_dev_token(token: Optional[str]):
+    global dev_token
+    dev_token = token
+
 def set_umami(site_id: str):
     global umami_site_id
     umami_site_id = site_id
+
+def _safe_url(url: Optional[str]) -> Optional[str]:
+    """Accept only http/https URLs — rejects javascript:, data:, etc."""
+    if not url:
+        return None
+    url = url.strip()
+    return url if url.startswith(('https://', 'http://')) else None
+
 
 def get_group_id_by_integral_id(integral_id: str) -> Optional[str]:
     if database is None:
@@ -48,7 +62,7 @@ def generate_representative_integrand_latex(integrand_canonical: str) -> Optiona
     if not integrand_canonical:
         return None
     try:
-        expr = sympify(integrand_canonical)
+        expr = safe_sympify(integrand_canonical)
         latex_str = latex(expr)
         return f"\\int {latex_str} \\, dx"
     except Exception as e:
@@ -63,7 +77,7 @@ def extract_closed_forms(instances: List[Dict]) -> List[Dict]:
         integral_type = instance.get('integral_type', 'unknown')
         equivalent_forms = instance.get('equivalent_forms', [])
         author_name = instance.get('author_name')
-        author_link = instance.get('author_link')
+        author_link = _safe_url(instance.get('author_link'))
         mse_question_id = instance.get('mse_question_id')
         for form in equivalent_forms:
             if (r'\int' not in form and
@@ -82,8 +96,14 @@ def extract_closed_forms(instances: List[Dict]) -> List[Dict]:
                 seen.add(form)
     return closed_forms
 
+_HASH_PATTERN = r"^[a-f0-9]{12}$"
+
+
 @router.get("/integrand/{integrand_hash}", response_class=HTMLResponse)
-async def view_group(request: Request, integrand_hash: str):
+async def view_group(
+    request: Request,
+    integrand_hash: str = PathParam(..., pattern=_HASH_PATTERN),
+):
     if templates is None:
         raise HTTPException(status_code=500, detail="Templates not initialized")
     if database is None:
@@ -115,7 +135,7 @@ async def view_group(request: Request, integrand_hash: str):
                 'mse_answer_id': integral.mse_answer_id,
                 'source_url': integral.source_url,
                 'author_name': integral.author_name if hasattr(integral, 'author_name') else None,
-                'author_link': integral.author_link if hasattr(integral, 'author_link') else None,
+                'author_link': _safe_url(integral.author_link if hasattr(integral, 'author_link') else None),
                 'removed': is_removed,
                 'removal_reason': removal_reason
             })
@@ -148,12 +168,18 @@ async def view_group(request: Request, integrand_hash: str):
             "mse_links": mse_links,
             "closed_forms": closed_forms,
             "dev_mode": dev_mode,
+            "dev_token": dev_token if dev_mode else "",
             "umami_site_id": umami_site_id
         }
     )
 
 @router.post("/integrand/{integrand_hash}/remove-instance")
-async def remove_instance_from_group(integrand_hash: str, instance_id: str = Form(...), reason: str = Form(...)):
+async def remove_instance_from_group(
+    integrand_hash: str = PathParam(..., pattern=_HASH_PATTERN),
+    instance_id: str = Form(...),
+    reason: str = Form(...),
+    x_dev_token: Optional[str] = Header(None),
+):
     """
     remove a specific integral instance (dev mode only)
     marks instance as removed in curation_log table - does not delete from database
@@ -161,6 +187,8 @@ async def remove_instance_from_group(integrand_hash: str, instance_id: str = For
     """
     if not dev_mode:
         raise HTTPException(status_code=403, detail="Developer mode not enabled")
+    if dev_token is None or not hmac.compare_digest(x_dev_token or "", dev_token):
+        raise HTTPException(status_code=403, detail="Invalid dev token")
     if database is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
     instance = database.get_integral_instance(instance_id)

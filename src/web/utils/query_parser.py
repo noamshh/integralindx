@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Tuple
 from sympy import sympify
+from src.utils.safe_math import safe_sympify
 from corpus.pipelines.variable_normalization_pipeline import (
     extract_variables_from_expression,
     create_variable_mapping,
@@ -48,7 +49,7 @@ def parse_query_to_sympy_integrand(query: str) -> Tuple[Optional[str], str]:
     if not query:
         return None, 'empty query provided'
     try:
-        parsed = sympify(query)
+        parsed = safe_sympify(query)
         stringified = str(parsed)
         integrand_vars = extract_variables_from_expression(stringified)
         if integrand_vars:

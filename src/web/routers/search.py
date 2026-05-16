@@ -2,8 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
-from sympy import sympify
-
+from src.utils.safe_math import safe_sympify
 from src.web.utils.query_parser import parse_query_to_sympy_integrand
 
 logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ dev_mode = False
 
 class MathQuery(BaseModel):
     query: str = Field(..., max_length=200, description="mathematical expression (max 200 characters)")
-    k: int = 5
+    k: int = Field(default=5, ge=1, le=20, description="number of results (1-20)")
     embedder: Optional[str] = None
 
 class ValidationRequest(BaseModel):
@@ -45,7 +44,7 @@ def set_dev_mode(enabled: bool):
 async def validate_expression(request: ValidationRequest):
     """Validate sympy"""
     try:
-        expr = sympify(request.expression)
+        expr = safe_sympify(request.expression)
         return {"valid": True, "sympy": str(expr)}
     except Exception as e:
         return {"valid": False, "error": f"Invalid SymPy expression: {str(e)}"}

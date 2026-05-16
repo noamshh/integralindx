@@ -3,6 +3,7 @@ import logging
 from typing import Tuple, Optional, Set
 import sympy as sp
 from src.models.egen.vocab import SYMPY_TO_PREFIX
+from src.utils.safe_math import safe_sympify
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def get_function_classes(expr) -> Set[type]:
 
 def validate_parsed_symbols(sympy_integrand: str, sympy_variable: str, debug: bool = False) -> Tuple[bool, Optional[str], Optional[Set[str]]]:
     try:
-        expr = sp.sympify(sympy_integrand)
+        expr = safe_sympify(sympy_integrand)
         # hardcoded edge case rejections
         if sp.I in expr.atoms():
             reason = "contains imaginary unit I (not supported)"
