@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
 from src.utils.safe_math import safe_sympify
 from src.web.utils.query_parser import parse_query_to_sympy_integrand
+from src.web.utils.rate_limit import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def set_dev_mode(enabled: bool):
     dev_mode = enabled
     logger.info(f"search router: dev mode {'enabled' if enabled else 'disabled'}")
 
-@router.post("/api/validate")
+@router.post("/api/validate", dependencies=[Depends(rate_limit)])
 async def validate_expression(request: ValidationRequest):
     """Validate sympy"""
     try:
@@ -57,7 +58,7 @@ async def get_available_embedders():
         "default": embedder_list[0] if embedder_list else "tfidf"
     }
 
-@router.post("/search", response_model=SimilarityResult)
+@router.post("/search", response_model=SimilarityResult, dependencies=[Depends(rate_limit)])
 async def search_similar_integrands(query: MathQuery):
     if search_engine is None:
         raise HTTPException(status_code=503, detail="search engine not available")

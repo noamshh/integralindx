@@ -145,12 +145,22 @@ class IntegralSearchApp {
         }
     }
 
+    escapeHtml(value) {
+        // These strings originate in scraped MSE posts. MathJax reads text
+        // content, so escaping here does not change how the maths renders.
+        return String(value ?? '').replace(
+            /[&<>"']/g,
+            ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])
+        );
+    }
+
     createResultCard(result, rank) {
         const col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4 mb-3';
+        const esc = this.escapeHtml;
         const similarityClass = this.getSimilarityClass(result.similarity_score);
         const similarityPercent = (result.similarity_score * 100).toFixed(1);
-        const displayMath = result.integrand_latex || result.integrand_canonical || result.latex || 'N/A';
+        const displayMath = esc(result.integrand_latex || result.integrand_canonical || result.latex || 'N/A');
         col.innerHTML = `
             <div class="result-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -162,7 +172,7 @@ class IntegralSearchApp {
                 <div class="result-math">\\[${displayMath}\\]</div>
                 <div class="mt-2">
                     <small class="text-muted">
-                        <strong>Family:</strong> ${result.integrand_family || 'Unknown'}
+                        <strong>Family:</strong> ${esc(result.integrand_family || "Unknown")}
                         <br>
                         <strong>Instances:</strong> ${result.total_instances || 0}
                         (${result.definite_count || 0} definite, ${result.indefinite_count || 0} indefinite)
@@ -176,7 +186,7 @@ class IntegralSearchApp {
                             <strong>Example integrals:</strong>
                             <div class="mt-1">
                                 ${result.latex_variants.slice(0, 2).map(latex =>
-                                    `<div class="equivalent-form">\\(${latex}\\)</div>`
+                                    `<div class="equivalent-form">\\(${esc(latex)}\\)</div>`
                                 ).join('')}
                                 ${result.total_instances > 2 ?
                                     `<div class="text-muted">... +${result.total_instances - 2} more</div>`
