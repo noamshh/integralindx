@@ -42,3 +42,6 @@ nul
 .DS_Store
 *.tmp
 *.bak
+
+# Separate service, kept locally
+umami/
