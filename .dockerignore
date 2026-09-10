@@ -1,0 +1,120 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!requirements*.txt
+docs/
+dev/md-files/EVALUATION_GUIDE.md
+dev/md-files/vast-ai-training-guide.md
+
+# Testing
+tests/
+pytest.ini
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Training data and models (KEEP ONLY WHAT'S NEEDED)
+# exclude raw training data
+data/raw/
+data/normalized/
+data/ml_training/equivalents/
+data/ml_training/*/train.tsv
+data/ml_training/*/val.tsv
+data/ml_training/*/test.tsv
+data/ml_seeds/
+data/grouped/
+data/contributors_rebuild/
+data/legacy/
+
+# exclude full training checkpoints (keep only inference)
+data/models/checkpoints/
+data/models/runs/
+
+# exclude temporary files
+*.tmp
+*.log
+*.pid
+.cache/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Logs
+logs/
+*.log
+
+# Backup files
+*.bak
+*.swp
+*~
+
+# System files
+Thumbs.db
+.DS_Store
+
+# Development scripts
+scripts/
+!scripts/export_inference_checkpoint.py
+
+# Config files not needed in production
+config/api_keys.yaml
+
+# Rust E-Gen (not needed in webapp)
+egen_integralindx/
+bin/
+dev/reference/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+Dockerfile.dev
+docker-compose.yml
+.dockerignore
+
+# Large files
+*.zip
+*.tar.gz
+*.tgz
+
+# Keep these files/dirs for deployment:
+# - src/ (all source code)
+# - corpus/ (formula models, needed by database)
+# - config/ (except api_keys.yaml)
+# - data/integral.db (database)
+# - data/models/inference/ (inference-only checkpoints)
+# - data/embeddings/ (pre-built FAISS caches)
+# - latex2sympy2_custom/ (custom package)
+# - requirements-prod.txt

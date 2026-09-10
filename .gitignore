@@ -4,41 +4,41 @@ __pycache__/
 .eggs/
 *.egg
 .idea/
+.vscode/
 .pytest_cache/
-
 .venv/
-latex2sympy2_custom/
-latex2sympy2_custom
-dev/
-scripts/
-dev/reference/
+venv/
+
+# Data, models and indexes: too large for git, rebuilt by the pipeline.
 data/
 checkpoints/
-logs/
 outputs/
-config/api_keys.yaml
-corpus/scripts
-corpus/pipelines/rebuild_contributors_pipeline.py
-
-*.jar
+logs/
+evaluation_results/
 *.db
 *.sqlite
 *.sqlite3
-nul
+*.pt
 *.pth
 *.ckpt
-*.pt
 *.model
 *.log
-.DS_Store
-*.tmp
+*.jar
 
-bin/
-bin/egen
-bin/egen.exe
-egen_integralindx
+# Third-party sources vendored locally for reference only.
+external/
+dev/
+latex2sympy2_custom/
 egen_integralindx/target/
 egen_integralindx/Cargo.lock
+bin/
 
-# deployment config with secrets
-fly.toml
+# Local scratch and tooling
+.claude/
+AGENT_BRIEF.md
+.env
+config/api_keys.yaml
+nul
+.DS_Store
+*.tmp
+*.bak

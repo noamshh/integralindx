@@ -1,0 +1,35 @@
+# fly.toml app configuration file generated for integralindx on 2025-10-24T18:21:57+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'integralindx'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  INTEGRALINDX_DEV_MODE = 'false'
+  INTEGRALINDX_EMBEDDER = 'ii-cl-19m_prod'
+  PORT = '8080'
+  PYTHONUNBUFFERED = '1'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = '5s'
+    timeout = '3s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/healthz'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

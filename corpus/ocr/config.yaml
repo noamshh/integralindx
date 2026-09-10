@@ -1,0 +1,33 @@
+# Defaults for corpus/ocr/ extraction pipeline. Override per-source via
+# bin/run_ocr_trial.py CLI args or via a separate yaml passed at the CLI.
+
+backend:
+  name: qwen3_vl
+  kwargs:
+    # Default model. 8B is what the first successful trial ran on; switch to
+    # 32B once vLLM + CUDA driver are confirmed compatible on a fresh box.
+    model: Qwen/Qwen3-VL-8B-Instruct
+    # Explicit IPv4 — `localhost` can resolve to ::1 first and miss the
+    # vLLM server bound to 0.0.0.0/127.0.0.1 (seen on the trial box).
+    base_url: http://127.0.0.1:8000/v1
+    api_key: EMPTY
+    temperature: 0.0
+    max_tokens: 4096
+    timeout: 600.0
+
+rendering:
+  dpi: 200
+
+paths:
+  renders_dir: data/raw/ocr_renders
+  output_dir: data/processed/ocr
+
+# vLLM serve command (run separately on the GPU box):
+#
+#   vllm serve Qwen/Qwen3-VL-32B-Instruct \
+#       --port 8000 \
+#       --max-model-len 32768 \
+#       --gpu-memory-utilization 0.92 \
+#       --limit-mm-per-prompt image=4
+#
+# For dev / prompt iteration on a 24GB card, drop in Qwen/Qwen3-VL-8B-Instruct.

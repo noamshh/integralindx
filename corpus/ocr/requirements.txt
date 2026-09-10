@@ -1,0 +1,11 @@
+# Focused requirements for the corpus/ocr trial. Install on the GPU box:
+#   pip install -r corpus/ocr/requirements.txt
+# vLLM is the heavy one; everything else is fast.
+
+vllm>=0.7.0          # GPU server for Qwen3-VL guided JSON decoding
+pymupdf>=1.24.0      # PDF -> page PNG rendering
+openai>=1.40.0       # client for vLLM's OpenAI-compatible server
+Pillow>=10.0.0       # image loading for the OCR pipeline
+sympy>=1.12          # canonicalize_integrand reuses the existing pipeline's sympify
+pyyaml>=6.0          # config.yaml parsing
+pytest>=8.0          # for the mock-backend smoke test (CPU-only)
