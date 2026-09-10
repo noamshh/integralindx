@@ -53,4 +53,6 @@ shutil.copy(d('ii-cl-19m_prod.pt'), '/app/data/models/inference/ii-cl-19m_prod.p
 
 EXPOSE 8080
 
-CMD ["uvicorn", "src.web.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--log-level", "info"]
+# Shell form so $PORT expands; exec so the server receives SIGTERM directly.
+# Cloud Run injects PORT and sends SIGTERM when scaling to zero.
+CMD exec uvicorn src.web.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1 --log-level info
