@@ -18,7 +18,7 @@ A focused implementation of E-Gen embeddings (Zheng et al., 2025) for mathematic
 </p>
 
 <p align="center">
- <span style="font-size: 1.2em;">Live demo: <a href="https://integralindx.fly.dev">integralindx.fly.dev</a> · Further reading: <a href="https://integralindx.fly.dev/theory">theory page</a></span>
+ <span style="font-size: 1.2em;">Model &amp; data: <a href="https://huggingface.co/noamshh/integralindx-encoder">noamshh/integralindx-encoder</a></span>
 </p>
 
 ---
@@ -122,6 +122,42 @@ The model successfully learns to cluster mathematically equivalent expressions i
 
 ---
 
+## Running it
+
+The trained encoder, the integral database and the precomputed embedding cache
+total roughly 200MB, so they live on the Hugging Face Hub rather than in git.
+The Docker build pulls them automatically; no token is needed.
+
+```bash
+docker build -t integralindx .
+docker run -p 8080:8080 integralindx     # http://localhost:8080
+```
+
+To run without Docker, fetch the artifacts into `data/` first:
+
+```bash
+pip install -r requirements/requirements-prod.txt
+python -c "
+from huggingface_hub import snapshot_download
+snapshot_download('noamshh/integralindx-encoder', local_dir='data/hub')"
+uvicorn src.web.main:app --port 8080
+```
+
+Set `INTEGRALINDX_DEV_MODE=true` to surface parser errors and enable the
+curation endpoints. See `.env.example` for the full set of variables.
+
+```bash
+pytest tests/
+```
+
+## What is not in this repository
+
+`data/` (the SQLite database, model checkpoints and embedding caches) and
+`external/` (third-party sources vendored locally for reference) are excluded
+by size, not by secrecy. Everything needed to rebuild them is here: the corpus
+pipeline under `corpus/`, the training code under `src/models/egen/`, and the
+E-Gen fork under `egen_integralindx/`.
+
 ## Custom Dependencies
 
 This project required modifications to two upstream libraries:
@@ -143,6 +179,11 @@ This project is built upon the E-Gen research by Zheng et al. (2025):
 - **Original Code**: [github.com/hongbozheng/E-Gen](https://github.com/hongbozheng/E-Gen) (CC BY-NC-SA 4.0)
 - **E-Gen Transformer**: [github.com/hongbozheng/transformer](https://github.com/hongbozheng/transformer) (CC BY-NC-SA 4.0)
 - **Patent**: [US20240135148A1](https://patents.google.com/patent/US20240135148A1) - "Semantic Representations of Mathematical Expressions in a Continuous Vector Space" (University of Illinois System)
+
+### Tooling
+
+Claude (Anthropic) was used for security review and parts of the
+implementation design.
 
 ### Data Source
 
