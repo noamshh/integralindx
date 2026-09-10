@@ -7,6 +7,7 @@ import sympy as sp
 from src.models.base_embedder import BaseEmbedder
 from corpus.formula_models import IntegrandGroup
 from src.utils.variable_normalization import normalize_parameters
+from src.utils.safe_math import safe_sympify
 from src.search.embedding_cache import load_embedding_cache, save_embedding_cache
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class IntegrandGroupSearch:
 
     def _convert_to_latex(self, canonical: str) -> str:
         try:
-            expr = sp.sympify(canonical)
+            expr = safe_sympify(canonical)
             return sp.latex(expr)
         except Exception as e:
             logger.warning(f"failed to convert '{canonical}' to latex: {e}")

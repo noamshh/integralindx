@@ -5,6 +5,7 @@ import logging
 from typing import List, Union, Optional
 from pathlib import Path
 import sympy as sp
+from src.utils.safe_math import CORPUS_MAX_EXPR_LENGTH, safe_sympify
 from omegaconf import OmegaConf
 
 from src.models.base_embedder import BaseEmbedder
@@ -60,7 +61,7 @@ class CLEmbedder(BaseEmbedder):
         prefix_exprs = []
         for expr_str in expressions:
             try:
-                expr = sp.sympify(expr_str)
+                expr = safe_sympify(expr_str, max_length=CORPUS_MAX_EXPR_LENGTH)
                 prefix = sympy_to_prefix(expr)
                 prefix_exprs.append(prefix)
             except Exception as e:

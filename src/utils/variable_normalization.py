@@ -1,7 +1,12 @@
+import logging
 import re
 from typing import Dict, Set
-from sympy import sympify, symbols, simplify, Function
+from sympy import symbols, simplify, Function
 from sympy.core.function import UndefinedFunction
+
+from src.utils.safe_math import safe_sympify
+
+logger = logging.getLogger(__name__)
 
 # canonical parameter alphabet for ML tokenization
 # max 3 parameters normalized to a, b, c (deterministic ordering)
@@ -19,7 +24,7 @@ def extract_variables_from_expression(expr_str: str) -> Set[str]:
         Set of variable names (excluding function names)
     """
     try:
-        expr = sympify(expr_str)
+        expr = safe_sympify(expr_str)
         # get free symbols (variables/parameters)
         symbols_in_expr = expr.free_symbols
         return {str(s) for s in symbols_in_expr}
@@ -86,8 +91,9 @@ def apply_variable_substitution(expr, var_mapping: Dict[str, str]):
     """
     if not var_mapping:
         return expr
-    # check for name collisions where a new name is also an old name
-    # example: r→s, s→t creates collision because 's' is both target and source
+    # Match the expression's own symbols by name: Symbol('t') and
+    # Symbol('t', real=True) are distinct, and subs() silently misses otherwise.
+    by_name = {str(s): s for s in expr.free_symbols}
     old_names = set(var_mapping.keys())
     new_names = set(var_mapping.values())
     has_collision = bool(old_names & new_names)
@@ -96,8 +102,10 @@ def apply_variable_substitution(expr, var_mapping: Dict[str, str]):
         temp_mapping = {}
         temp_to_final = {}
         for i, (old_var, new_var) in enumerate(var_mapping.items()):
+            if old_var not in by_name:
+                continue
             temp_name = f'__temp_{i}'
-            temp_mapping[symbols(old_var)] = symbols(temp_name)
+            temp_mapping[by_name[old_var]] = symbols(temp_name)
             temp_to_final[symbols(temp_name)] = symbols(new_var)
         temp_expr = expr.subs(temp_mapping)
         return temp_expr.subs(temp_to_final)
@@ -105,7 +113,8 @@ def apply_variable_substitution(expr, var_mapping: Dict[str, str]):
         # no collision, direct substitution is safe
         subs_mapping = {}
         for old_var, new_var in var_mapping.items():
-            subs_mapping[symbols(old_var)] = symbols(new_var)
+            if old_var in by_name:
+                subs_mapping[by_name[old_var]] = symbols(new_var)
         return expr.subs(subs_mapping)
 
 
@@ -126,7 +135,7 @@ def normalize_parameters(expr_str: str, integration_var: str = 'x') -> str:
         Normalized expression string with canonical parameter names
     """
     try:
-        expr = sympify(expr_str)
+        expr = safe_sympify(expr_str)
         # extract all symbols
         all_symbols = expr.free_symbols
         # separate integration variable from parameters
