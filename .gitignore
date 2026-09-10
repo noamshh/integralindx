@@ -45,3 +45,6 @@ nul
 
 # Separate service, kept locally
 umami/
+
+# Local operational notes
+DEPLOY.md
