@@ -15,7 +15,6 @@ database = None  # IntegralDatabase instance (set by main.py)
 templates: Optional[Jinja2Templates] = None
 dev_mode: bool = False
 dev_token: Optional[str] = None
-umami_site_id: str = ""
 
 
 def set_database(db):
@@ -36,10 +35,6 @@ def set_dev_mode(enabled: bool):
 def set_dev_token(token: Optional[str]):
     global dev_token
     dev_token = token
-
-def set_umami(site_id: str):
-    global umami_site_id
-    umami_site_id = site_id
 
 def _safe_url(url: Optional[str]) -> Optional[str]:
     """Accept only http/https URLs — rejects javascript:, data:, etc."""
@@ -169,7 +164,6 @@ async def view_group(
             "closed_forms": closed_forms,
             "dev_mode": dev_mode,
             "dev_token": dev_token if dev_mode else "",
-            "umami_site_id": umami_site_id
         }
     )
 

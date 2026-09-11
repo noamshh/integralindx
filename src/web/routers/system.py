@@ -12,7 +12,6 @@ router = APIRouter()
 search_engine = None
 templates = None
 dev_mode = False
-umami_site_id = ""
 
 _env_health_token = os.getenv("HEALTH_TOKEN")
 HEALTH_TOKEN = _env_health_token if _env_health_token else _secrets.token_hex(32)
@@ -32,17 +31,12 @@ def set_dev_mode(enabled: bool):
     dev_mode = enabled
     logger.info(f"system router: dev mode {'enabled' if enabled else 'disabled'}")
 
-def set_umami(site_id: str):
-    global umami_site_id
-    umami_site_id = site_id
-
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "title": "IntegralIndx - Integral Similarity Search",
         "dev_mode": dev_mode,
-        "umami_site_id": umami_site_id
     })
 
 # Cloud Run's front end answers /healthz itself, so the page polls /api/health.

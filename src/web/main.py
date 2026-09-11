@@ -77,12 +77,8 @@ async def lifespan(app: FastAPI):
         search_engine = IntegrandGroupSearch.load_cache(embedder_name, embedder, database)
         logger.info(f"search engine loaded from cache")
         templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
-        umami_site_id = os.getenv("UMAMI_SITE_ID", "")
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})
         system.set_search_engine(search_engine)
-        system.set_umami(umami_site_id)
-        groups.set_umami(umami_site_id)
-        theory.set_umami(umami_site_id)
         for router_module in [system, groups, theory]:
             router_module.set_templates(templates)
         groups.set_database(database)
@@ -119,11 +115,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://analytics-integralindx.fly.dev 'unsafe-inline'; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
         "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
         "img-src 'self' data:; "
         "font-src 'self' https://cdn.jsdelivr.net data:; "
-        "connect-src 'self' https://analytics-integralindx.fly.dev; "
+        "connect-src 'self'; "
         "frame-ancestors 'none'"
     )
     return response
