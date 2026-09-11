@@ -14,7 +14,7 @@ from fastapi.exceptions import HTTPException
 
 from src.utils.paths import get_paths
 from src.database.integral_db import IntegralDatabase
-from src.web.routers import search, system, groups, theory
+from src.web.routers import search, system, groups
 from src.models.egen.contrastive_embedder import CLEmbedder
 from src.search.similarity_engine import IntegrandGroupSearch
 from src.search import embedding_cache
@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
         templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
         search.set_search_engine(search_engine, {embedder_name: search_engine.embedder})
         system.set_search_engine(search_engine)
-        for router_module in [system, groups, theory]:
+        for router_module in [system, groups]:
             router_module.set_templates(templates)
         groups.set_database(database)
         groups.set_dev_mode(dev_mode)
@@ -128,7 +128,6 @@ async def add_security_headers(request: Request, call_next):
 app.include_router(system.router, tags=["system"])
 app.include_router(search.router, tags=["search"])
 app.include_router(groups.router, tags=["groups"])
-app.include_router(theory.router, tags=["theory"])
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc: HTTPException):

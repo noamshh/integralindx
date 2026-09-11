@@ -48,3 +48,10 @@ umami/
 
 # Local operational notes
 DEPLOY.md
+
+# Theory page, now a blog post
+src/web/templates/theory.html
+src/web/routers/theory.py
+src/web/static/images/egen-fig2.png
+src/web/static/images/encoder_c.svg
+src/web/static/images/encoder.svg

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Header, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 import hmac
 import logging
 import os
@@ -38,6 +38,10 @@ async def home(request: Request):
         "title": "IntegralIndx - Integral Similarity Search",
         "dev_mode": dev_mode,
     })
+
+@router.get("/theory")
+async def theory():
+    return RedirectResponse("https://noamshh.github.io/blog/integralindx-theory/")
 
 # Cloud Run's front end answers /healthz itself, so the page polls /api/health.
 @router.get("/api/health")

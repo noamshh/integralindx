@@ -18,7 +18,7 @@ A focused implementation of E-Gen embeddings (Zheng et al., 2025) for mathematic
 </p>
 
 <p align="center">
- <span style="font-size: 1.2em;">Model &amp; data: <a href="https://huggingface.co/noamshh/integralindx-encoder">noamshh/integralindx-encoder</a></span>
+ <span style="font-size: 1.2em;"><a href="https://integralindx-108892248596.us-central1.run.app">Live demo</a> · <a href="https://noamshh.github.io/blog/integralindx-theory/">Writeup</a> · <a href="https://huggingface.co/noamshh/integralindx-encoder">Model &amp; data</a></span>
 </p>
 
 ---

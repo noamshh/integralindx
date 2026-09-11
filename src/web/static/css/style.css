@@ -488,47 +488,6 @@ a.text-primary:hover {
     color: var(--primary-blue) !important;
     text-decoration: underline;
 }
-.theory-header {
-    margin-top: 2rem;
-    margin-bottom: 3rem;
-}
-.theory-header h1 {
-    color: var(--text-dark);
-    font-weight: 700;
-}
-.theory-section {
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 4rem;
-}
-.theory-section-header {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 3px solid var(--primary-blue);
-}
-.theory-content {
-    font-size: 1.05rem;
-    line-height: 1.8;
-    color: var(--text-medium);
-}
-.theory-content p {
-    margin-bottom: 1.25rem;
-}
-.theory-content ul {
-    margin-bottom: 1.25rem;
-    line-height: 1.8;
-}
-.theory-content h4 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-}
 code {
     background: var(--bg-gray);
     padding: 0.2rem 0.4rem;
@@ -536,53 +495,6 @@ code {
     font-size: 0.95rem;
     color: #333;
     font-family: 'Consolas', 'Monaco', monospace;
-}
-.theory-content .card {
-    border: 1px solid var(--border-light);
-}
-.theory-content .card.bg-light {
-    background: var(--bg-light) !important;
-}
-.theory-figure {
-    margin: 2rem 0;
-}
-.figure-placeholder {
-    text-align: center;
-    background: var(--bg-light);
-    border: 2px dashed var(--border-medium);
-    border-radius: 8px;
-    padding: 3rem 1rem;
-    min-height: 300px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-.figure-placeholder img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-}
-.figure-caption {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    font-style: italic;
-    margin-top: 0.75rem;
-}
-@media (max-width: 768px) {
-    .theory-section {
-        margin-bottom: 3rem;
-    }
-    .theory-section-header {
-        font-size: 1.5rem;
-    }
-    .theory-content {
-        font-size: 1rem;
-    }
-    .figure-placeholder {
-        padding: 2rem 0.5rem;
-        min-height: 200px;
-    }
 }
 .theory-nav-badge {
     position: fixed;
