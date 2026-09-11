@@ -21,7 +21,8 @@ from src.search import embedding_cache
 
 class HealthCheckFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find("/healthz") == -1
+        message = record.getMessage()
+        return "/healthz" not in message and "/api/health" not in message
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

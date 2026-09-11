@@ -25,7 +25,7 @@ class IntegralSearchApp {
 
     async checkServerHealth() {
         try {
-            const response = await fetch('/healthz');
+            const response = await fetch('/api/health');
             if (!response.ok) {
                 this.showError('Unable to connect to server', false);
             }

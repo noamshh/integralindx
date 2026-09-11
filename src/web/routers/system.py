@@ -45,6 +45,8 @@ async def home(request: Request):
         "umami_site_id": umami_site_id
     })
 
+# Cloud Run's front end answers /healthz itself, so the page polls /api/health.
+@router.get("/api/health")
 @router.get("/healthz")
 async def healthz():
     return JSONResponse({"status": "ok"})
