@@ -48,6 +48,7 @@ umami/
 
 # Local operational notes
 DEPLOY.md
+cas_comparison/
 
 # Theory page, now a blog post
 src/web/templates/theory.html

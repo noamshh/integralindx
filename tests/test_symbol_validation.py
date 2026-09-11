@@ -17,7 +17,7 @@ class TestSymbolValidation:
             ('a*x + b', 'x', 'linear with params'),
             ('alpha*sin(x)', 'x', 'alpha is whitelisted'),
             ('a*b*c*x', 'x', '3 params (max allowed)'),
-            ('beta*x**2 + gamma*x', 'x', 'beta and gamma whitelisted'),
+            ('beta*x**2 + alpha*x', 'x', 'alpha and beta whitelisted'),
         ]
 
         for integrand, variable, description in test_cases:

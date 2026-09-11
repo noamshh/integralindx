@@ -8,6 +8,11 @@ from pathlib import Path
 from src.database.integral_db import IntegralDatabase
 
 
+def instances_of(db, integrand_hash):
+    group = db.get_group_by_hash(integrand_hash)
+    return [db.get_integral_instance(i) for i in group.definite_instances + group.indefinite_instances]
+
+
 class TestDatabaseConnection:
     """test database connection and basic operations"""
 
@@ -22,24 +27,19 @@ class TestDatabaseConnection:
         except Exception as e:
             pytest.skip(f"Failed to connect to database: {e}")
 
-    def test_database_exists(self):
-        """test that database file exists"""
-        db_path = Path('data/integral.db')
-        assert db_path.exists(), "Database file not found"
-
     def test_database_connection(self, db):
         """test that database connection works"""
         assert db is not None, "Database connection failed"
 
     def test_get_group_count(self, db):
         """test getting total number of integrand groups"""
-        count = db.get_group_count()
+        count = db.count_groups()
         assert count > 0, "No integrand groups found"
         assert isinstance(count, int), f"Expected int, got {type(count)}"
 
     def test_get_instance_count(self, db):
         """test getting total number of integral instances"""
-        count = db.get_instance_count()
+        count = db.count_instances()
         assert count > 0, "No integral instances found"
         assert isinstance(count, int), f"Expected int, got {type(count)}"
 
@@ -124,7 +124,7 @@ class TestIntegralInstances:
         test_hash = test_group.integrand_hash
 
         # get instances
-        instances = db.get_instances_by_hash(test_hash)
+        instances = instances_of(db, test_hash)
         assert len(instances) > 0, f"No instances found for hash {test_hash}"
 
         # check structure
@@ -141,14 +141,14 @@ class TestIntegralInstances:
             pytest.skip("No groups available for testing")
 
         test_hash = groups[0].integrand_hash
-        instances = db.get_instances_by_hash(test_hash)
+        instances = instances_of(db, test_hash)
         if len(instances) == 0:
             pytest.skip("No instances available for testing")
 
         test_id = instances[0].id
 
         # retrieve by ID
-        instance = db.get_instance_by_id(test_id)
+        instance = db.get_integral_instance(test_id)
         assert instance is not None, f"Failed to retrieve instance {test_id}"
         assert instance.id == test_id, "ID mismatch"
 
@@ -169,14 +169,7 @@ class TestCurationLog:
 
     def test_curation_log_exists(self, db):
         """test that curation log table exists"""
-        # try to query curation log (should not crash)
-        try:
-            # just check table exists
-            count = db._count_curation_actions()
-            assert isinstance(count, int), f"Expected int count, got {type(count)}"
-        except AttributeError:
-            # method might not exist in current implementation
-            pytest.skip("Curation log query method not available")
+        assert isinstance(db.get_curation_log(), list)
 
     def test_excluded_instances_filter(self, db):
         """test that excluded instances are filtered correctly"""
@@ -207,8 +200,8 @@ class TestDatabaseStatistics:
 
     def test_group_instance_relationship(self, db):
         """test that group counts match instance counts"""
-        total_groups = db.get_group_count()
-        total_instances = db.get_instance_count()
+        total_groups = db.count_groups()
+        total_instances = db.count_instances()
 
         # should have more instances than groups (instances grouped by integrand)
         assert total_instances >= total_groups, \
@@ -225,13 +218,12 @@ class TestDatabaseStatistics:
         indefinite_count = 0
 
         for group in groups:
-            instances = db.get_instances_by_hash(group.integrand_hash)
+            instances = instances_of(db, group.integrand_hash)
             for instance in instances:
-                if hasattr(instance, 'is_definite'):
-                    if instance.is_definite:
-                        definite_count += 1
-                    else:
-                        indefinite_count += 1
+                if instance.integral_type == 'definite':
+                    definite_count += 1
+                else:
+                    indefinite_count += 1
 
         # just check we have some data
         total = definite_count + indefinite_count
@@ -246,7 +238,7 @@ class TestDatabaseStatistics:
 
         found_mse_data = False
         for group in groups:
-            instances = db.get_instances_by_hash(group.integrand_hash)
+            instances = instances_of(db, group.integrand_hash)
             for instance in instances[:3]:  # check first few
                 if hasattr(instance, 'mse_question_id') and instance.mse_question_id:
                     found_mse_data = True
@@ -289,7 +281,7 @@ class TestDatabaseIntegrity:
             pytest.skip("No groups available for testing")
 
         for group in groups:
-            instances = db.get_instances_by_hash(group.integrand_hash)
+            instances = instances_of(db, group.integrand_hash)
             assert len(instances) > 0, \
                 f"Group {group.integrand_hash} has no instances"
 

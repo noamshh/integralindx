@@ -258,21 +258,17 @@ class TestVariableSubstitution:
         ]
 
         for expr_str, var_str, expected_vars, expected_params in test_cases:
-            integrand, variable = extract_variables_from_expression(expr_str, var_str)
-
-            # check that we got the right variable
-            assert str(variable) == var_str, f"Variable mismatch for {expr_str}: expected {var_str}, got {variable}"
+            assert extract_variables_from_expression(expr_str) == expected_vars | expected_params
 
     def test_parameter_ordering(self):
-        """test that parameters are ordered deterministically"""
-        # parameters should be ordered alphabetically
+        """test that parameters are renamed to a, b, c in alphabetical order"""
         test_cases = [
-            (['beta', 'alpha'], ['a', 'b']),  # alphabetical: alpha→a, beta→b
-            (['n', 'm'], ['a', 'b']),  # alphabetical: m→a, n→b
-            (['c', 'b', 'a'], ['a', 'b', 'c']),  # already ordered
+            ('beta*x + alpha', 'a + b*x'),  # alpha→a, beta→b
+            ('n*x**m', 'b*x**a'),  # m→a, n→b
+            ('c*x + b*x**2 + a', 'a + b*x**2 + c*x'),  # already ordered
         ]
 
-        for input_params, expected_output in test_cases:
-            # normalize_parameters should order alphabetically
-            normalized = normalize_parameters(input_params)
-            assert normalized == expected_output, f"Parameter ordering failed for {input_params}: expected {expected_output}, got {normalized}"
+        for expr_str, expected in test_cases:
+            normalized = normalize_parameters(expr_str, 'x')
+            assert sp.simplify(sp.sympify(normalized) - sp.sympify(expected)) == 0, \
+                f"Parameter ordering failed for {expr_str}: expected {expected}, got {normalized}"

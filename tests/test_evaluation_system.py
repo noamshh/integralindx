@@ -36,10 +36,14 @@ def tokenizer():
 def eval_manager(tokenizer, tmp_path):
     """create evaluation manager with test config"""
     paths = get_paths()
+    eval_dir = paths['project_root'] / 'data' / 'eval'
+    if not (eval_dir / 'topk_queries.json').exists():
+        pytest.skip("Evaluation queries not available")
     eval_config = {
-        'eval_queries_path': str(paths['project_root'] / 'data' / 'ml_training' / 'eval_queries.json'),
+        'topk_queries_path': str(eval_dir / 'topk_queries.json'),
+        'analogy_queries_path': str(eval_dir / 'analogy_queries.json'),
         'db_path': str(paths['project_root'] / 'data' / 'integral.db'),
-        'warmup_iterations': 0,
+        'warmup_iterations': 1,
         'tier1_every_n_iters': 5,
         'tier2_every_n_iters': 10,
         'tier3_every_n_iters': 20,

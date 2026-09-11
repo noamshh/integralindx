@@ -1,4 +1,4 @@
--e latex2sympy2_custom
+latex2sympy2_extended @ git+https://github.com/noamshh/latex2sympy2_extended@integralindx
 absl-py==2.3.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3

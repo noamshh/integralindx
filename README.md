@@ -162,7 +162,7 @@ E-Gen fork under `egen_integralindx/`.
 
 This project required modifications to two upstream libraries:
 
-1. **latex2sympy2_extended**: Forked to add parsing support for polylogarithm (`Li`) and Riemann zeta (`zeta`) functions. Modified the ANTLR grammar (`PS.g4`) and parser logic to handle these special functions.
+1. **latex2sympy2_extended**: [Forked](https://github.com/noamshh/latex2sympy2_extended/tree/integralindx) to add parsing support for polylogarithm (`Li`) and Riemann zeta (`zeta`) functions. Modified the ANTLR grammar (`PS.g4`) and parser logic to handle these special functions.
 
 2. **E-Gen**: Forked the [original Rust implementation](https://github.com/hongbozheng/E-Gen) to add custom mathematical rewrite rules (`math.rs`), including polylogarithm identities, extended trig/hyperbolic identities, logarithm/exponential simplification rules, and rational function decomposition.
 
@@ -187,7 +187,7 @@ implementation design.
 
 ### Data Source
 
-All integral expressions are sourced from [Math StackExchange](https://math.stackexchange.com) under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). We gratefully acknowledge the MSE community for creating this valuable mathematical content.
+All integral expressions are sourced from [Math StackExchange](https://math.stackexchange.com) under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). They were collected through the official [Stack Exchange API](https://api.stackexchange.com/docs) with a registered application key. We gratefully acknowledge the MSE community for creating this valuable mathematical content.
 We note that each integral in the webapp is accompanied by a link to the original MSE link of the question/answer, the name of the author, and a link to the author's profile in MSE.
 
 ---

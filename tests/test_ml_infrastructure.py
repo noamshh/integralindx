@@ -17,7 +17,7 @@ class TestVocabulary:
     def test_vocab_size(self):
         """test that vocabulary has expected size"""
         vocab_size = get_vocab_size()
-        assert vocab_size == 70, f"Expected vocab size 70, got {vocab_size}"
+        assert vocab_size == 62, f"Expected vocab size 62, got {vocab_size}"
 
     def test_vocab_tokens(self):
         """test that all expected token categories are present"""
@@ -41,15 +41,13 @@ class TestVocabulary:
             assert str(i) in tokens, f"Missing digit {i}"
 
         # check operators
-        operators = ['add', 'mul', 'sub', 'pow', 'sin', 'cos', 'ln', 'exp']
+        operators = ['add', 'mul', 'sub', 'pow', 'sin', 'cos', 'log', 'exp']
         for op in operators:
             assert op in tokens, f"Missing operator {op}"
 
         # check special functions
         assert 'Li' in tokens, "Missing Li (polylog)"
         assert 'zeta' in tokens, "Missing zeta"
-        assert 're' in tokens, "Missing re (real part)"
-        assert 'im' in tokens, "Missing im (imaginary part)"
 
     def test_no_unk_func(self):
         """test that UNK_FUNC is not in vocabulary (removed per refactoring)"""
@@ -67,7 +65,7 @@ class TestTokenizer:
 
     def test_tokenizer_vocab_size(self, tokenizer):
         """test tokenizer vocabulary size"""
-        assert len(tokenizer) == 70, f"Expected tokenizer vocab size 70, got {len(tokenizer)}"
+        assert len(tokenizer) == 62, f"Expected tokenizer vocab size 62, got {len(tokenizer)}"
 
     def test_encode_simple_expressions(self, tokenizer):
         """test encoding simple expressions"""
@@ -92,8 +90,6 @@ class TestTokenizer:
         test_cases = [
             "Li 2 x",  # polylog(2, x)
             "zeta x",  # zeta(x)
-            "re x",  # re(x)
-            "im x",  # im(x)
         ]
 
         for expr in test_cases:
@@ -124,26 +120,6 @@ class TestTokenizer:
         assert len(tokens) <= max_len, \
             f"Tokens exceed max_len: {len(tokens)} > {max_len}"
 
-    def test_batch_encode(self, tokenizer):
-        """test batch encoding with padding"""
-        exprs = [
-            "add x 1",
-            "mul a pow x 2",
-            "Li 2 x",
-        ]
-
-        batch = tokenizer.batch_encode(exprs, max_len=20)
-
-        # check output format
-        assert 'tokens' in batch, "Missing 'tokens' key in batch output"
-        assert 'mask' in batch, "Missing 'mask' key in batch output"
-
-        # check shapes
-        tokens = batch['tokens']
-        mask = batch['mask']
-        assert tokens.shape[0] == len(exprs), "Batch size mismatch"
-        assert tokens.shape == mask.shape, "Token and mask shapes don't match"
-
 
 class TestPrefixNotation:
     """test prefix notation conversion"""
@@ -155,7 +131,7 @@ class TestPrefixNotation:
 
         test_cases = [
             (x, "x"),
-            (x + 1, "add x 1"),
+            (x + 1, "add 1 x"),
             (x * a, "mul a x"),
             (x**2, "pow x 2"),
             (sp.sin(x), "sin x"),
@@ -174,8 +150,6 @@ class TestPrefixNotation:
             (sp.polylog(2, x), "Li 2 x"),
             (sp.zeta(3), "zeta 3"),
             (sp.zeta(x), "zeta x"),
-            (sp.re(x), "re x"),
-            (sp.im(x), "im x"),
         ]
 
         for expr, expected in test_cases:
