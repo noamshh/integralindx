@@ -37,8 +37,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 USER integralindx
 
-# The model, database and embedding cache total ~200MB and are not in git.
-# They are pulled from the Hub so a clean clone builds without extra setup.
+# Model, database and FAISS index (~130MB) are not in git; pull them from the Hub.
 RUN python -c "\
 from huggingface_hub import hf_hub_download; \
 import os, shutil; \
@@ -49,7 +48,8 @@ os.makedirs('/app/data/embeddings/ii-cl-19m_prod', exist_ok=True); \
 shutil.copy(d('integral.db'), '/app/data/integral.db'); \
 shutil.copy(d('ii-cl-19m_prod.pt'), '/app/data/models/inference/ii-cl-19m_prod.pt'); \
 [shutil.copy(d('embeddings/' + f), '/app/data/embeddings/ii-cl-19m_prod/' + f) \
- for f in ('embedder.json', 'embedder.meta.json', 'groups.pkl')]"
+ for f in ('index.faiss', 'index_to_hash.json', 'metadata.json')]; \
+shutil.rmtree(os.path.expanduser('~/.cache/huggingface'), ignore_errors=True)"
 
 EXPOSE 8080
 
