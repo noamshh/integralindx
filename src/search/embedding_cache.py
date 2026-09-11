@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import faiss
 
-from src.models.baseline import BaselineEmbedder
 from src.utils.paths import get_paths
 from src.utils.provenance import now_iso
 
@@ -112,6 +111,8 @@ def load_embedding_cache(embedder_name: str, embedder: Optional[Any] = None, dat
     logger.info(f"loaded FAISS index (mmap): {index.ntotal} vectors")
     search_engine.index_to_hash = index_to_hash
     if embedder_path.exists() and embedder is None:
+        # Imported lazily: it pulls in scikit-learn and sentence-transformers.
+        from src.models.baseline import BaselineEmbedder
         try:
             embedder = BaselineEmbedder.load(embedder_path)
             logger.info(f"loaded embedder from cache: {embedder.method}")
